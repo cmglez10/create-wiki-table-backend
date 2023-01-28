@@ -8,10 +8,14 @@ const router = new Router();
 
 router.get("/analyze/:url", async (ctx: Koa.Context) => {
   const url: string = ctx.params.url;
-  const html: Response = await axios(url);
-  const $ = Cheerio.load(await html.text());
+  // const html: Response = await axios(url);
+  // const $ = Cheerio.load(await html.text());
   // Analizar el html con Cheerio
+
+
+  ctx.body = ctx.params.url;
 });
 
 app.use(router.routes());
 app.use(router.allowedMethods());
+app.listen(3000);
