@@ -1,20 +1,58 @@
 import Cheerio from "cheerio";
 import axios from "axios";
 
-const BASE_URL = "https://www.futbol-regional.es/competicion.php?"
+const BASE_URL = "https://www.futbol-regional.es/competicion.php?";
+
+export interface Team {
+  position: number;
+  name: string;
+  points: number;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  gf: number;
+  ga: number;
+  gd: number;
+  sanction: number;
+}
 
 export class Scrap {
   $: cheerio.Root;
+  teams: Team[] = [];
 
   async fetch(competition: string) {
     const html = await axios(BASE_URL + competition);
     this.$ = Cheerio.load(await html.data);
-    // this.getTeams();
-    return html.data;
+    this.getTeams();
+    return this.teams;
   }
 
   getTeams() {
-    const teams = this.$('.tablagen .filanth-child(3)')
-    console.log('getTeams', teams)
+    const rows: cheerio.Cheerio = this.$("#clasificacion1 .tablagen .fila");
+
+    console.log(rows);
+
+    for (let i = 0; i < rows.length; i++) {
+      const team: Team = {
+        position: Number(this.getColumn(rows[i], 2)),
+        name: this.getColumn(rows[i], 3),
+        points: Number(this.getColumn(rows[i], 6)),
+        played: Number(this.getColumn(rows[i], 7)),
+        won: Number(this.getColumn(rows[i], 8)),
+        drawn: Number(this.getColumn(rows[i], 9)),
+        lost: Number(this.getColumn(rows[i], 10)),
+        gf: Number(this.getColumn(rows[i], 11)),
+        ga: Number(this.getColumn(rows[i], 12)),
+        gd: Number(this.getColumn(rows[i], 13)),
+        sanction: Number(this.getColumn(rows[i], 14)),
+      };
+
+      this.teams.push(team);
+    }
+  }
+
+  getColumn(row: cheerio.Element, columnIndex: number) {
+    return this.$(this.$(row).children()[columnIndex]).text();
   }
 }
