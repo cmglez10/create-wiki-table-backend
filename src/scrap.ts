@@ -1,5 +1,6 @@
 import Cheerio from "cheerio";
 import axios from "axios";
+import { replace, trim, split } from "lodash";
 
 const BASE_URL = "https://www.futbol-regional.es/";
 const COMPETITION_URL = "competicion.php?";
@@ -7,6 +8,7 @@ const COMPETITION_URL = "competicion.php?";
 export interface Team {
   position: number;
   name: string;
+  completeName: string;
   shield: string;
   points: number;
   played: number;
@@ -26,20 +28,19 @@ export class Scrap {
   async fetch(competition: string) {
     const html = await axios(BASE_URL + COMPETITION_URL + competition);
     this.$ = Cheerio.load(await html.data);
-    this.getTeams();
+    await this.getTeams();
     return this.teams;
   }
 
-  getTeams() {
+  async getTeams() {
     this.teams = [];
     const rows: cheerio.Cheerio = this.$("#clasificacion1 .tablagen .fila");
-
-    console.log(rows);
 
     for (let i = 0; i < rows.length; i++) {
       const team: Team = {
         position: Number(this.getColumn(rows[i], 2)),
-        name: this.getColumn(rows[i], 3),
+        name: this.getName(rows[i]),
+        completeName: await this.getCompleteName(rows[i]),
         shield: this.getShieldUrl(rows[i]),
         points: Number(this.getColumn(rows[i], 6)),
         played: Number(this.getColumn(rows[i], 7)),
@@ -62,5 +63,19 @@ export class Scrap {
 
   getShieldUrl(row: cheerio.Element): string {
     return BASE_URL + this.$(this.$(row).find("#popupimagen img")).attr("src");
+  }
+
+  getName(row: cheerio.Element): string {
+    const name = this.getColumn(row, 3);
+
+    return trim(replace(name, new RegExp("\\.", "g"), ". "));
+  }
+
+  async getCompleteName(row: cheerio.Element): Promise<string> {
+    const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
+    const html = await axios(BASE_URL + teamUrl);
+    const team$ = Cheerio.load(await html.data);
+    const cName = split(team$("#derecha_sup_equ").text(), " :: ")[1];
+    return cName;
   }
 }
