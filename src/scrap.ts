@@ -1,6 +1,6 @@
 import Cheerio from "cheerio";
 import axios from "axios";
-import { replace, trim, split } from "lodash";
+import { replace, trim, split, map, join } from "lodash";
 
 const BASE_URL = "https://www.futbol-regional.es/";
 const COMPETITION_URL = "competicion.php?";
@@ -68,14 +68,25 @@ export class Scrap {
   getName(row: cheerio.Element): string {
     const name = this.getColumn(row, 3);
 
-    return trim(replace(name, new RegExp("\\.", "g"), ". "));
+    return this.addQuotes(trim(replace(name, new RegExp("\\.", "g"), ". ")));
   }
 
   async getCompleteName(row: cheerio.Element): Promise<string> {
     const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
     const html = await axios(BASE_URL + teamUrl);
     const team$ = Cheerio.load(await html.data);
-    const cName = split(team$("#derecha_sup_equ").text(), " :: ")[1];
+    const cName = this.addQuotes(
+      split(team$("#derecha_sup_equ").text(), " :: ")[1]
+    );
     return cName;
+  }
+
+  addQuotes(teamName: string): string {
+    return join(
+      map(split(teamName, " "), (part) =>
+        part.length === 1 ? `"${part}"` : part
+      ),
+      " "
+    );
   }
 }
