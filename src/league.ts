@@ -67,7 +67,7 @@ export class League {
   getName(row: cheerio.Element): string {
     const name = this.getColumn(row, 3);
 
-    return Utils.addQuotes(trim(replace(name, new RegExp("\\.", "g"), ". ")));
+    return Utils.normalizeName(name);
   }
 
   async getCompleteName(row: cheerio.Element): Promise<string> {

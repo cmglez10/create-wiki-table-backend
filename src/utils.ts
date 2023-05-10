@@ -1,6 +1,6 @@
 import axios from "axios";
 import Cheerio from "cheerio";
-import { join, map, split } from "lodash";
+import { join, map, replace, split, trim } from "lodash";
 
 const BASE_URL = "https://www.futbol-regional.es/";
 
@@ -25,5 +25,11 @@ export class Utils {
       split(team$("#derecha_sup_equ").text(), " :: ")[1]
     );
     return cName;
+  }
+
+  static normalizeName(name: string): string {
+    return Utils.addQuotes(
+      replace(trim(replace(name, new RegExp("\\.", "g"), ". ")), "  ", " ")
+    );
   }
 }

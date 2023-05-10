@@ -83,8 +83,12 @@ export class Playoffs {
   async getMatch(row: cheerio.Cheerio): Promise<PlayoffMatch> {
     return {
       date: trim(this.$(row).find(".fecha").text()),
-      homeName: trim(this.$(row).find(".equ_loc_2").text()),
-      awayName: trim(this.$(row).find(".equ_vis_2").text()),
+      homeName: Utils.normalizeName(
+        trim(this.$(row).find(".equ_loc_2").text())
+      ),
+      awayName: Utils.normalizeName(
+        trim(this.$(row).find(".equ_vis_2").text())
+      ),
       homeCompleteName: await this.getCompleteName(
         this.$(row).find(".equ_loc_2").parent()
       ),
