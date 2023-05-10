@@ -8,13 +8,17 @@ const router = new Router();
 app.use(cors());
 const scrap = new Scrap();
 
-router.get("/analyze/:url", async (ctx: Koa.Context) => {
-  const url: string = ctx.params.url;
-
-  const res = await scrap.fetch(url);
-
-  ctx.body = res;
-});
+router
+  .get("/league/:leagueId", async (ctx: Koa.Context) => {
+    const leagueId: string = ctx.params.leagueId;
+    const res = await scrap.fetchLeague(leagueId);
+    ctx.body = res;
+  })
+  .get("/playoff/:playoffId", async (ctx: Koa.Context) => {
+    const playoffId: string = ctx.params.playoffId;
+    const res = await scrap.fetchPlayoff(playoffId);
+    ctx.body = res;
+  });
 
 app.use(router.routes());
 app.use(router.allowedMethods());
