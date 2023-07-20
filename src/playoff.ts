@@ -1,7 +1,6 @@
-import axios from "axios";
 import Cheerio from "cheerio";
 import { last, split, trim } from "lodash";
-import { Utils } from "./utils";
+import { TeamInfo, Utils } from "./utils";
 
 export interface PlayoffMatch {
   date: string;
@@ -9,6 +8,8 @@ export interface PlayoffMatch {
   awayName: string;
   homeCompleteName: string;
   awayCompleteName: string;
+  homeFlag: string;
+  awayFlag: string;
   homeGoals: number;
   awayGoals: number;
   extraTime: boolean;
@@ -81,6 +82,13 @@ export class Playoffs {
   }
 
   async getMatch(row: cheerio.Cheerio): Promise<PlayoffMatch> {
+    const homeTeamInfo = await this.getTeamInfo(
+      this.$(row).find(".equ_loc_2").parent()
+    );
+    const awayTeamInfo = await this.getTeamInfo(
+      this.$(row).find(".equ_vis_2").parent()
+    );
+
     return {
       date: trim(this.$(row).find(".fecha").text()),
       homeName: Utils.normalizeName(
@@ -89,25 +97,26 @@ export class Playoffs {
       awayName: Utils.normalizeName(
         trim(this.$(row).find(".equ_vis_2").text())
       ),
-      homeCompleteName: await this.getCompleteName(
-        this.$(row).find(".equ_loc_2").parent()
-      ),
-      awayCompleteName: await this.getCompleteName(
-        this.$(row).find(".equ_vis_2").parent()
-      ),
+      homeCompleteName: homeTeamInfo.completeName,
+      awayCompleteName: awayTeamInfo.completeName,
+      homeFlag: homeTeamInfo.flag,
+      awayFlag: awayTeamInfo.flag,
       homeGoals: Number(this.$(row).find(".gol_loc_2").text()),
       awayGoals: Number(this.$(row).find(".gol_vis_2").text()),
       extraTime: false,
     };
   }
 
-  async getCompleteName(teamLink: cheerio.Cheerio): Promise<string> {
+  async getTeamInfo(teamLink: cheerio.Cheerio): Promise<TeamInfo> {
     const teamUrl = teamLink.attr("href");
     if (!teamUrl) {
-      return "";
+      return {
+        completeName: "",
+        flag: "",
+      };
     }
 
-    return Utils.getCompleteName(teamUrl);
+    return Utils.getTeamInfo(teamUrl);
   }
 
   async getPenalties(row: cheerio.Cheerio): Promise<Partial<PlayoffMatch>> {

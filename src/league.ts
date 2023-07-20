@@ -1,7 +1,5 @@
-import { replace, trim, split, map, join } from "lodash";
 import Cheerio from "cheerio";
 import { Utils } from "./utils";
-import axios from "axios";
 
 export interface Team {
   position: number;
@@ -72,6 +70,6 @@ export class League {
 
   async getCompleteName(row: cheerio.Element): Promise<string> {
     const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
-    return Utils.getCompleteName(teamUrl);
+    return (await Utils.getTeamInfo(teamUrl)).completeName;
   }
 }
