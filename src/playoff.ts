@@ -19,6 +19,7 @@ export interface PlayoffMatch {
 
 export interface Playoff {
   matches: PlayoffMatch[];
+  winner: 1 | 2;
 }
 
 export interface PlayoffRound {
@@ -55,15 +56,20 @@ export class Playoffs {
         const match: PlayoffMatch = await this.getMatch(rowCheerio);
         const playoff: Playoff = {
           matches: [match],
+          winner: undefined,
         };
 
         last(this.rounds).playoffs.push(playoff);
+
+        playoff.winner = this.getWinner(rowCheerio, playoff, match);
       }
 
       if (rowCheerio.hasClass("eliminatoria_resto")) {
         const playoff: Playoff = last(last(this.rounds).playoffs);
         const match: PlayoffMatch = await this.getMatch(rowCheerio);
         playoff.matches.push(match);
+
+        playoff.winner = this.getWinner(rowCheerio, playoff, match);
       }
 
       if (rowCheerio.hasClass("gol_vis_2")) {
@@ -79,6 +85,20 @@ export class Playoffs {
     }
 
     return this.rounds;
+  }
+
+  getWinner(
+    row: cheerio.Cheerio,
+    playoff: Playoff,
+    currentMatch: PlayoffMatch
+  ): 1 | 2 {
+    if (row.find(".equ_loc_2 b").length > 0) {
+      return playoff.matches[0].homeName === currentMatch.homeName ? 1 : 2;
+    } else if (row.find(".equ_vis_2 b").length > 0) {
+      return playoff.matches[0].awayName === currentMatch.awayName ? 2 : 1;
+    } else {
+      return undefined;
+    }
   }
 
   async getMatch(row: cheerio.Cheerio): Promise<PlayoffMatch> {
