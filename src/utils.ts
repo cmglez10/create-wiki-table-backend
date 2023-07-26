@@ -1,6 +1,6 @@
 import axios from "axios";
 import Cheerio from "cheerio";
-import { join, map, replace, some, split, trim } from "lodash";
+import { join, last, map, replace, some, split, trim } from "lodash";
 
 export interface TeamInfo {
   completeName: string;
@@ -25,12 +25,11 @@ const specialFlag: Record<string, string> = {
 
 export class Utils {
   static addQuotes(teamName: string): string {
-    return join(
-      map(split(teamName, " "), (part) =>
-        part.length === 1 && part !== "y" ? `"${part}"` : part
-      ),
-      " "
-    );
+    const bits = split(teamName, " ");
+    if (last(bits).length === 1) {
+      bits[bits.length - 1] = `"${last(bits)}"`;
+    }
+    return join(bits, " ");
   }
 
   static getBaseUrl(): string {
