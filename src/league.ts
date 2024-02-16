@@ -1,5 +1,6 @@
 import Cheerio from "cheerio";
 import { Utils } from "./utils";
+import { split, trim } from "lodash";
 
 export interface Team {
   position: number;
@@ -70,6 +71,7 @@ export class League {
 
   async getCompleteName(row: cheerio.Element): Promise<string> {
     const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
-    return (await Utils.getTeamInfo(teamUrl)).completeName;
+    const teamId: number = parseInt(trim(split(teamUrl, "/")[1]));
+    return (await Utils.getTeamInfo(teamId)).completeName;
   }
 }

@@ -31,6 +31,8 @@ export class Playoffs {
   $: cheerio.Root;
   rounds: PlayoffRound[];
 
+  teamsInfo: Record<number, TeamInfo> = {};
+
   constructor(html: string) {
     this.$ = Cheerio.load(html);
     this.rounds = [];
@@ -103,10 +105,10 @@ export class Playoffs {
 
   async getMatch(row: cheerio.Cheerio): Promise<PlayoffMatch> {
     const homeTeamInfo = await this.getTeamInfo(
-      this.$(row).find(".equ_loc_2").parent()
+      this.$(row).find(".equ_loc_2 > a")
     );
     const awayTeamInfo = await this.getTeamInfo(
-      this.$(row).find(".equ_vis_2").parent()
+      this.$(row).find(".equ_vis_2 > a")
     );
 
     return {
@@ -129,14 +131,20 @@ export class Playoffs {
 
   async getTeamInfo(teamLink: cheerio.Cheerio): Promise<TeamInfo> {
     const teamUrl = teamLink.attr("href");
-    if (!teamUrl) {
+    const teamId: number = parseInt(trim(split(teamUrl, "?")[1]));
+
+    if (!teamId) {
       return {
         completeName: "",
         flag: "",
       };
     }
 
-    return Utils.getTeamInfo(teamUrl);
+    if (!this.teamsInfo[teamId]) {
+      this.teamsInfo[teamId] = await Utils.getTeamInfo(teamId);
+    }
+
+    return this.teamsInfo[teamId];
   }
 
   async getPenalties(row: cheerio.Cheerio): Promise<Partial<PlayoffMatch>> {

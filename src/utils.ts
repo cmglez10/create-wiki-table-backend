@@ -88,16 +88,16 @@ export class Utils {
     return translateFlag[flag] ?? flag;
   }
 
-  static async getTeamInfo(teamUrl: string): Promise<TeamInfo> {
+  static async getTeamInfo(teamId: number): Promise<TeamInfo> {
     try {
-      const html = await axios(BASE_URL + teamUrl);
+      const html = await axios(BASE_URL + "equipo.php?" + teamId);
       const team$ = Cheerio.load(await html.data);
       return {
         completeName: Utils.getCompleteName(team$),
         flag: await Utils.getFlag(team$),
       };
     } catch (e) {
-      console.error("[Utils|getTeamInfo] Error getting team info", teamUrl);
+      console.error("[Utils|getTeamInfo] Error getting team info", teamId);
       return {
         completeName: "",
         flag: "",
