@@ -1,5 +1,5 @@
 import Cheerio from "cheerio";
-import { last, split, trim } from "lodash";
+import { isFinite, last, split, toNumber, trim } from "lodash";
 import { TeamInfo, Utils } from "./utils";
 
 export interface PlayoffMatch {
@@ -73,17 +73,6 @@ export class Playoffs {
 
         playoff.winner = this.getWinner(rowCheerio, playoff, match);
       }
-
-      if (rowCheerio.hasClass("gol_vis_2")) {
-        const match: PlayoffMatch = last(
-          last(last(this.rounds).playoffs).matches
-        );
-
-        const penalties = await this.getPenalties(rowCheerio);
-        match.extraTime = true;
-        match.homePenalties = penalties.homePenalties;
-        match.awayPenalties = penalties.awayPenalties;
-      }
     }
 
     return this.rounds;
@@ -111,13 +100,22 @@ export class Playoffs {
       this.$(row).find(".equ_vis_2 > a")
     );
 
+    const homePenalties = split(
+      split(this.$(row).find(".equ_loc_2").text(), "[")[1],
+      "]"
+    )[0];
+    const awayPenalties = split(
+      split(this.$(row).find(".equ_vis_2").text(), "[")[1],
+      "]"
+    )[0];
+
     return {
       date: trim(this.$(row).find(".fecha").text()),
       homeName: Utils.normalizeName(
-        trim(this.$(row).find(".equ_loc_2").text())
+        trim(this.$(row).find(".equ_loc_2 a").text())
       ),
       awayName: Utils.normalizeName(
-        trim(this.$(row).find(".equ_vis_2").text())
+        trim(this.$(row).find(".equ_vis_2 a").text())
       ),
       homeCompleteName: homeTeamInfo.completeName,
       awayCompleteName: awayTeamInfo.completeName,
@@ -125,7 +123,9 @@ export class Playoffs {
       awayFlag: awayTeamInfo.flag,
       homeGoals: Number(this.$(row).find(".gol_loc_2").text()),
       awayGoals: Number(this.$(row).find(".gol_vis_2").text()),
-      extraTime: false,
+      extraTime: !!(homePenalties || awayPenalties),
+      homePenalties: homePenalties ? toNumber(homePenalties) : undefined,
+      awayPenalties: awayPenalties ? toNumber(awayPenalties) : undefined,
     };
   }
 
