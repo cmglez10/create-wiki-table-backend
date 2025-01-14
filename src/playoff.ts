@@ -108,6 +108,8 @@ export class Playoffs {
       split(this.$(row).find(".equ_vis_2").text(), "[")[1],
       "]"
     )[0];
+    const resultStr = trim(this.$(row).find(".gol_loc").text());
+    const resultArray = split(resultStr, "-");
 
     return {
       date: trim(this.$(row).find(".fecha").text()),
@@ -121,8 +123,8 @@ export class Playoffs {
       awayCompleteName: awayTeamInfo.completeName,
       homeFlag: homeTeamInfo.flag,
       awayFlag: awayTeamInfo.flag,
-      homeGoals: Number(this.$(row).find(".gol_loc_2").text()),
-      awayGoals: Number(this.$(row).find(".gol_vis_2").text()),
+      homeGoals: Number(resultArray[0]),
+      awayGoals: Number(resultArray[1]),
       extraTime: !!(homePenalties || awayPenalties),
       homePenalties: homePenalties ? toNumber(homePenalties) : undefined,
       awayPenalties: awayPenalties ? toNumber(awayPenalties) : undefined,
@@ -141,7 +143,7 @@ export class Playoffs {
     }
 
     if (!this.teamsInfo[teamId]) {
-      this.teamsInfo[teamId] = await Utils.getTeamInfo(teamId);
+      this.teamsInfo[teamId] = await Utils.getTeamInfo(teamId, 'm');
     }
 
     return this.teamsInfo[teamId];

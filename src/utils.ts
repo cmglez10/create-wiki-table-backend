@@ -1,6 +1,6 @@
 import axios from "axios";
 import Cheerio from "cheerio";
-import { join, last, map, replace, some, split, trim } from "lodash";
+import { join, last, replace, split, trim } from "lodash";
 
 export interface TeamInfo {
   completeName: string;
@@ -17,10 +17,10 @@ const translateFlag: Record<string, string> = {
   "Andorra la Vella": "Andorra",
 };
 
-const specialFlag: Record<string, string> = {
-  Ceuta: "Ceuta",
-  Melilla: "Melilla",
-  Andorra: "Andorra",
+const transformTeamName: Record<string, string> = {
+  'Club de Fútbol Badalona "B"': "Club de Fútbol Badalona",
+  "Club Deportivo Badajoz": "Club Deportivo Badajoz (1905-2012)",
+  "Valencia-Mestalla": "Valencia Club de Fútbol Mestalla",
 };
 
 export class Utils {
@@ -40,6 +40,9 @@ export class Utils {
     const cName = Utils.addQuotes(
       split(team$("#derecha_sup_equ").text(), " :: ")[1]
     );
+    if (transformTeamName[cName]) {
+      return transformTeamName[cName];
+    }
     return cName;
   }
 
@@ -88,9 +91,9 @@ export class Utils {
     return translateFlag[flag] ?? flag;
   }
 
-  static async getTeamInfo(teamId: number): Promise<TeamInfo> {
+  static async getTeamInfo(teamId: number, section: string): Promise<TeamInfo> {
     try {
-      const html = await axios(BASE_URL + "equipo.php?" + teamId);
+      const html = await axios(`${BASE_URL}equipo.php?sec=${section}&${teamId}`);
       const team$ = Cheerio.load(await html.data);
       return {
         completeName: Utils.getCompleteName(team$),

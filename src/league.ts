@@ -25,7 +25,7 @@ export class League {
     this.$ = Cheerio.load(html);
   }
 
-  async getTeams() {
+  async getTeams(section: string) {
     const teams: Team[] = [];
     const rows: cheerio.Cheerio = this.$("#clasificacion1 .tablagen .fila");
 
@@ -33,7 +33,7 @@ export class League {
       const team: Team = {
         position: Number(this.getColumn(rows[i], 2)),
         name: this.getName(rows[i]),
-        completeName: await this.getCompleteName(rows[i]),
+        completeName: await this.getCompleteName(rows[i], section),
         shield: this.getShieldUrl(rows[i]),
         points: Number(this.getColumn(rows[i], 6)),
         played: Number(this.getColumn(rows[i], 7)),
@@ -69,9 +69,9 @@ export class League {
     return Utils.normalizeName(name);
   }
 
-  async getCompleteName(row: cheerio.Element): Promise<string> {
+  async getCompleteName(row: cheerio.Element, section: string): Promise<string> {
     const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
     const teamId: number = parseInt(trim(split(teamUrl, "/")[1]));
-    return (await Utils.getTeamInfo(teamId)).completeName;
+    return (await Utils.getTeamInfo(teamId, section)).completeName;
   }
 }

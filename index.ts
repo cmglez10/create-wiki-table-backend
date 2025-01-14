@@ -9,9 +9,10 @@ app.use(cors());
 const scrap = new Scrap();
 
 router
-  .get("/league/:leagueId", async (ctx: Koa.Context) => {
+  .get("/league/:leagueId/section/:section", async (ctx: Koa.Context) => {
     const leagueId: string = ctx.params.leagueId;
-    const res = await scrap.fetchLeague(leagueId);
+    const section: string = ctx.params.section;
+    const res = await scrap.fetchLeague(leagueId, section);
     ctx.body = res;
   })
   .get("/playoff/:playoffId", async (ctx: Koa.Context) => {

@@ -3,13 +3,13 @@ import { League, Team } from "./league";
 import { PlayoffRound, Playoffs } from "./playoff";
 
 const BASE_URL = "https://www.futbol-regional.es/";
-const COMPETITION_URL = "competicion.php?";
+const COMPETITION_URL = "competicion.php";
 
 export class Scrap {
-  async fetchLeague(competition: string): Promise<Team[]> {
-    const html = await this.getHtml(BASE_URL + COMPETITION_URL + competition);
+  async fetchLeague(competition: string, section: string): Promise<Team[]> {
+    const html = await this.getHtml(`${BASE_URL}${COMPETITION_URL}?com=${competition}&sec=${section}`);
     const league = new League(html);
-    return league.getTeams();
+    return league.getTeams(section);
   }
 
   async fetchPlayoff(competition: string): Promise<PlayoffRound[]> {
