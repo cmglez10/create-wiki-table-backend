@@ -9,6 +9,9 @@ app.use(cors());
 const scrap = new Scrap();
 
 router
+  .get("/health", async (ctx: Koa.Context) => {
+    ctx.body = "<h1>Healthy</hh1>"
+  })
   .get("/league/:leagueId/section/:section", async (ctx: Koa.Context) => {
     const leagueId: string = ctx.params.leagueId;
     const section: string = ctx.params.section;
@@ -19,6 +22,10 @@ router
     const playoffId: string = ctx.params.playoffId;
     const res = await scrap.fetchPlayoff(playoffId);
     ctx.body = res;
+  })
+  .get("/results/:url", async (ctx: Koa.Context) => {
+    const res = await scrap.fetchResults(ctx.params.url);
+    ctx.body = res;  
   });
 
 app.use(router.routes());
