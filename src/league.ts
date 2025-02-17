@@ -23,6 +23,7 @@ export class League {
 
   constructor(html: string) {
     this.$ = Cheerio.load(html);
+    console.log("Results -> constructor -> this.$", this.$("html").text());
   }
 
   async getTeams(section: string) {

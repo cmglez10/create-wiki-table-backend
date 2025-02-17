@@ -1,7 +1,7 @@
 import Koa from "koa";
 import Router from "koa-router";
 import cors from "@koa/cors";
-import { Scrap } from "./src/scrap";
+import { Origin, Scrap } from "./src/scrap";
 
 const app: Koa = new Koa();
 const router = new Router();
@@ -23,8 +23,8 @@ router
     const res = await scrap.fetchPlayoff(playoffId);
     ctx.body = res;
   })
-  .get("/results/:url", async (ctx: Koa.Context) => {
-    const res = await scrap.fetchResults(ctx.params.url);
+  .get("/results/:group", async (ctx: Koa.Context) => {
+    const res = await scrap.fetchResults(Origin.RFEF, ctx.params.group);
     ctx.body = res;  
   });
 
