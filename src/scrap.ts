@@ -5,16 +5,8 @@ import { Results, ResultsData } from "./results";
 
 const FUTBOL_REGIONAL_BASE_URL = "https://www.futbol-regional.es/";
 const COMPETITION_URL = "competicion.php";
+const RESULTS_TABLE_URL = "com_calendario_tabla.php";
 
-export enum Origin {
-  RFEF = "rfef",
-  FRF = "frf",
-}
-
-const FEDERATION_BASE_URL = {
-  [Origin.RFEF]: "https://resultados.rfef.es/pnfg/NPcd/NFG_VisTablaCruzada",
-  [Origin.FRF]: "https://www.frfutbol.com/pnfg/NPcd/NFG_VisTablaCruzada",
-};
 
 export class Scrap {
   async fetchLeague(competition: string, section: string): Promise<Team[]> {
@@ -29,10 +21,9 @@ export class Scrap {
     return playoffs.getPlayoffs();
   }
 
-  async fetchResults(origin: Origin, grupo: string): Promise<ResultsData> {
-    console.log("fetchResults -> url", `${FEDERATION_BASE_URL[origin]}?cod_primaria=1000120&CodGrupo=${grupo}`);
-    const html = await this.getHtml(`${FEDERATION_BASE_URL[origin]}?cod_primaria=1000120&CodGrupo=${grupo}`);
-    const  results = new Results(html);
+  async fetchResults(federationId: string, groupId: string, year: string, section: string): Promise<ResultsData> {
+    const html = await this.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${RESULTS_TABLE_URL}?va0=1&va1=${groupId}&va3=${federationId}&va4=${year}&va6=1000000&va7=${section}`);
+    const  results = new Results(html, section);
     return results.getResults();
   }
 
