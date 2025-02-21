@@ -1,6 +1,6 @@
 import Cheerio from "cheerio";
-import { Utils } from "./utils";
 import { split, trim } from "lodash";
+import { Utils } from "./utils";
 
 export interface Team {
   position: number;
@@ -23,7 +23,6 @@ export class League {
 
   constructor(html: string) {
     this.$ = Cheerio.load(html);
-    console.log("Results -> constructor -> this.$", this.$("html").text());
   }
 
   async getTeams(section: string) {

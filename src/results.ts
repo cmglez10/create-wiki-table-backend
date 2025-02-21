@@ -57,8 +57,6 @@ export class Results {
 
     const columns = firstRow.find("div");
 
-    console.log("getTeams -> columns text", columns.text());
-
     const filteredColumns = filter(columns, (column, index) => {
       return index > 1;
     });
