@@ -83,9 +83,12 @@ export class Playoffs {
     playoff: Playoff,
     currentMatch: PlayoffMatch
   ): 1 | 2 {
-    if (row.find(".equ_loc_2 b").length > 0) {
+    const local = row.find(".equ_loc_2");
+    const visitor = row.find(".equ_vis_2");
+
+    if (local.attr("style").match(/text-decoration:underline/) ){
       return playoff.matches[0].homeName === currentMatch.homeName ? 1 : 2;
-    } else if (row.find(".equ_vis_2 b").length > 0) {
+    } else if (visitor.attr("style").match(/text-decoration:underline/)) {
       return playoff.matches[0].awayName === currentMatch.awayName ? 2 : 1;
     } else {
       return undefined;
