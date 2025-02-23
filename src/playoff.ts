@@ -1,5 +1,5 @@
 import Cheerio from "cheerio";
-import { isFinite, last, split, toNumber, trim } from "lodash";
+import { last, split, toNumber, trim } from "lodash";
 import { TeamInfo, Utils } from "./utils";
 
 export interface PlayoffMatch {

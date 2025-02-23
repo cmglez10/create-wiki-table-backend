@@ -10,13 +10,13 @@ const RESULTS_TABLE_URL = "com_calendario_tabla.php";
 
 export class Scrap {
   async fetchLeague(competition: string, section: string): Promise<Team[]> {
-    const html = await this.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${COMPETITION_URL}?com=${competition}&sec=${section}`);
+    const html = await this.getHtml(this.getCompetitionUrl(competition, section));
     const league = new League(html);
     return league.getTeams(section);
   }
 
-  async fetchPlayoff(competition: string): Promise<PlayoffRound[]> {
-    const html = await this.getHtml(FUTBOL_REGIONAL_BASE_URL + COMPETITION_URL + competition);
+  async fetchPlayoff(competition: string, section: string): Promise<PlayoffRound[]> {
+    const html = await this.getHtml(this.getCompetitionUrl(competition, section));
     const playoffs = new Playoffs(html);
     return playoffs.getPlayoffs();
   }
@@ -30,5 +30,9 @@ export class Scrap {
   async getHtml(url: string): Promise<string> {
     const html = await axios(url);
     return html.data;
+  }
+
+  getCompetitionUrl(competition: string, section: string): string {
+    return `${FUTBOL_REGIONAL_BASE_URL}${COMPETITION_URL}?com=${competition}&sec=${section}`;
   }
 }
