@@ -1,6 +1,6 @@
 import Cheerio from "cheerio";
-import { filter, includes, map, split, toInteger, trim } from "lodash";
-import { TeamInfo, Utils } from "./utils";
+import { includes, split, toInteger, trim } from "lodash";
+import { Utils } from "./utils";
 
 
 export interface Result {
@@ -9,8 +9,8 @@ export interface Result {
 }
 
 export interface RecordResult {
-  homeTeam: TeamInfo;
-  awayTeam: TeamInfo;
+  homeTeam: Team;
+  awayTeam: Team;
   result: Result;
   goals: number;
 }
@@ -22,10 +22,17 @@ interface Records {
 }
 
 export interface ResultsData {
-  teams: Array<TeamInfo>;
+  teams: Array<Team>;
   results: Array<Array<Result>>;
   records: Records;
 }
+
+export interface Team {
+  name: string;
+  completeName: string;
+  flag: string;
+}
+
 
 export class Results {
   $: cheerio.Root;
@@ -52,34 +59,36 @@ export class Results {
     }
   }
 
-  async getTeams(rows: cheerio.Cheerio): Promise<Array<TeamInfo>> {
-    const firstRow = rows.first();
+  async getTeams(rows: cheerio.Cheerio): Promise<Array<Team>> {
+    const results: Array<Team> = [];
 
-    const columns = firstRow.find("div");
+    for(let i = 2; i < rows.length; i++) {
+      const row = rows.get(i);
+      const columns = this.$(row).find("div");
 
-    const filteredColumns = filter(columns, (column, index) => {
-      return index > 1;
-    });
+      results.push(await this.getTeamInfo(this.$(columns).first().find("a")));
+    }
 
-    const teamsPromises = map(filteredColumns, (column) => {
-      return this.getTeamInfo(this.$(column).find("a"));
-    });
-
-    return Promise.all(teamsPromises);
+    return results;
   }
 
-  async getTeamInfo(teamLink: cheerio.Cheerio): Promise<TeamInfo> {
+  async getTeamInfo(teamLink: cheerio.Cheerio): Promise<Team> {   
+     const teamName = teamLink.text();
     const teamUrl = teamLink.attr("href");
     const teamId: number = parseInt(trim(split(teamUrl, "?")[1]));
 
     if (!teamId) {
       return {
         completeName: "",
+        name: Utils.normalizeName(teamName),
         flag: "",
       };
     }
 
-    return  Utils.getTeamInfo(teamId, this.section);
+    return {
+      ...await Utils.getTeamInfo(teamId, this.section),
+      name: Utils.normalizeName(teamName),
+    };
   }
   
 
@@ -113,7 +122,7 @@ export class Results {
     return results;
   }
   
-  getRecords(results: Array<Array<Result>>, teams: Array<TeamInfo>): Records {
+  getRecords(results: Array<Array<Result>>, teams: Array<Team>): Records {
     let biggestHomeWin: RecordResult = null;
     let biggestAwayWin: RecordResult = null;
     let moreGoalsMatch: RecordResult = null;
