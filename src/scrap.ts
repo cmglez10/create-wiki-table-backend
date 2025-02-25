@@ -1,4 +1,6 @@
 import axios from "axios";
+import Cheerio from "cheerio";
+import { split } from "lodash";
 import { League, Team } from "./league";
 import { PlayoffRound, Playoffs } from "./playoff";
 import { Results, ResultsData } from "./results";
@@ -21,9 +23,14 @@ export class Scrap {
     return playoffs.getPlayoffs();
   }
 
-  async fetchResults(federationId: string, groupId: string, year: string, section: string): Promise<ResultsData> {
-    const html = await this.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${RESULTS_TABLE_URL}?va0=1&va1=${groupId}&va3=${federationId}&va4=${year}&va6=1000000&va7=${section}`);
-    const  results = new Results(html, section);
+  async fetchResults(competition: string, section: string): Promise<ResultsData> {
+    const html = await this.getHtml(this.getCompetitionUrl(competition, section));
+    const $ = Cheerio.load(html);
+    const href = $('#post-clasificacion #menu_index:nth-of-type(3) a').attr('href');
+    const url = split(href, "'")[1];
+
+    const tableHtml = await this.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${url}`);
+    const  results = new Results(tableHtml, section);
     return results.getResults();
   }
 

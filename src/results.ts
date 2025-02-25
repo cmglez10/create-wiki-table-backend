@@ -16,9 +16,9 @@ export interface RecordResult {
 }
 
 interface Records {
-  biggestHomeWin: RecordResult;
-  biggestAwayWin: RecordResult;
-  moreGoalsMatch: RecordResult;
+  biggestHomeWin: Array<RecordResult>;
+  biggestAwayWin: Array<RecordResult>;
+  moreGoalsMatch: Array<RecordResult>;
 }
 
 export interface ResultsData {
@@ -123,9 +123,9 @@ export class Results {
   }
   
   getRecords(results: Array<Array<Result>>, teams: Array<Team>): Records {
-    let biggestHomeWin: RecordResult = null;
-    let biggestAwayWin: RecordResult = null;
-    let moreGoalsMatch: RecordResult = null;
+    let biggestHomeWin: Array<RecordResult> = [];
+    let biggestAwayWin: Array<RecordResult> = [];
+    let moreGoalsMatch: Array<RecordResult> = [];
     
     for (let i = 0; i < results.length; i++) {
       for(let j = 0; j < results[i].length; j++) {
@@ -133,31 +133,60 @@ export class Results {
         if (result === null) continue;
         const goalDifference = result.home - result.away;
 
-        if (goalDifference > 0 && (!biggestHomeWin || goalDifference > biggestHomeWin.goals)) {
-          biggestHomeWin = {
-            homeTeam: teams[i],
-            awayTeam: teams[j],
-            result,
-            goals: goalDifference,
-          };
+        if (goalDifference > 0) {
+          if (biggestHomeWin.length === 0 || goalDifference > biggestHomeWin[0].goals) {
+            biggestHomeWin = [
+              {
+                homeTeam: teams[i],
+                awayTeam: teams[j],
+                result,
+                goals: goalDifference,
+              }
+            ];
+          } else if (goalDifference === biggestHomeWin[0].goals) {
+            biggestHomeWin.push({
+              homeTeam: teams[i],
+              awayTeam: teams[j],
+              result,
+              goals: goalDifference,
+            });
+          }
         }
 
-        if (goalDifference < 0 && (!biggestAwayWin || Math.abs(goalDifference) > biggestAwayWin.goals)) {
-          biggestAwayWin = {
-            homeTeam: teams[i],
-            awayTeam: teams[j],
-            result,
-            goals: Math.abs(goalDifference),
-          };
+        if (goalDifference < 0) {
+          if (biggestAwayWin.length === 0 || Math.abs(goalDifference) > biggestAwayWin[0].goals) {
+            biggestAwayWin = [{
+              homeTeam: teams[i],
+              awayTeam: teams[j],
+              result,
+              goals: Math.abs(goalDifference),
+            }];
+          } else if (Math.abs(goalDifference) === biggestAwayWin[0].goals) {
+            biggestAwayWin.push({
+              homeTeam: teams[i],
+              awayTeam: teams[j],
+              result,
+              goals: Math.abs(goalDifference),
+            });
+          }
         }
 
-        if (!moreGoalsMatch || result.home + result.away > moreGoalsMatch.goals) {
-          moreGoalsMatch = {
-            homeTeam: teams[i],
-            awayTeam: teams[j],
-            result,
-            goals: result.home + result.away,
-          };
+        if (result.home + result.away > 0) {
+          if (moreGoalsMatch.length === 0 || result.home + result.away > moreGoalsMatch[0].goals) {
+            moreGoalsMatch = [{
+              homeTeam: teams[i],
+              awayTeam: teams[j],
+              result,
+              goals: result.home + result.away,
+            }];
+          } else if (result.home + result.away === moreGoalsMatch[0].goals) {
+            moreGoalsMatch.push({
+              homeTeam: teams[i],
+              awayTeam: teams[j],
+              result,
+              goals: result.home + result.away,
+            });
+          }
         }
       }
     }

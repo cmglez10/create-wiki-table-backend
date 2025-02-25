@@ -24,9 +24,8 @@ router
     const res = await scrap.fetchPlayoff(playoffId, section);
     ctx.body = res;
   })
-  .get("/results/:federation/:group/:year/:section", async (ctx: Koa.Context) => {
-    const section = ctx.params.section !== "m" ? ctx.params.section : "";
-    const res = await scrap.fetchResults(ctx.params.federation, ctx.params.group, ctx.params.year, section);
+  .get("/results/:groupId/section/:section", async (ctx: Koa.Context) => {
+    const res = await scrap.fetchResults(ctx.params.groupId, ctx.params.section);
     ctx.body = res;  
   });
 
