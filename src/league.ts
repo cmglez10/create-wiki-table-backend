@@ -1,6 +1,6 @@
 import Cheerio from "cheerio";
-import { Utils } from "./utils";
 import { split, trim } from "lodash";
+import { Utils } from "./utils";
 
 export interface Team {
   position: number;

@@ -1,6 +1,6 @@
+import cors from "@koa/cors";
 import Koa from "koa";
 import Router from "koa-router";
-import cors from "@koa/cors";
 import { Scrap } from "./src/scrap";
 
 const app: Koa = new Koa();
@@ -9,16 +9,24 @@ app.use(cors());
 const scrap = new Scrap();
 
 router
+  .get("/health", async (ctx: Koa.Context) => {
+    ctx.body = "<h1>Healthy</hh1>"
+  })
   .get("/league/:leagueId/section/:section", async (ctx: Koa.Context) => {
     const leagueId: string = ctx.params.leagueId;
     const section: string = ctx.params.section;
     const res = await scrap.fetchLeague(leagueId, section);
     ctx.body = res;
   })
-  .get("/playoff/:playoffId", async (ctx: Koa.Context) => {
+  .get("/playoff/:playoffId/section/:section", async (ctx: Koa.Context) => {
     const playoffId: string = ctx.params.playoffId;
-    const res = await scrap.fetchPlayoff(playoffId);
+    const section: string = ctx.params.section;
+    const res = await scrap.fetchPlayoff(playoffId, section);
     ctx.body = res;
+  })
+  .get("/results/:groupId/section/:section", async (ctx: Koa.Context) => {
+    const res = await scrap.fetchResults(ctx.params.groupId, ctx.params.section);
+    ctx.body = res;  
   });
 
 app.use(router.routes());

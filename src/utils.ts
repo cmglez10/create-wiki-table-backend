@@ -100,7 +100,6 @@ export class Utils {
         flag: await Utils.getFlag(team$),
       };
     } catch (e) {
-      console.error("[Utils|getTeamInfo] Error getting team info", teamId);
       return {
         completeName: "",
         flag: "",
