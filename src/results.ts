@@ -73,11 +73,16 @@ export class Results {
   }
 
   async getTeamInfo(teamLink: cheerio.Cheerio): Promise<Team> {   
-     const teamName = teamLink.text();
+    const teamName = teamLink.text();
     const teamUrl = teamLink.attr("href");
-    const teamId: number = parseInt(trim(split(teamUrl, "?")[1]));
+    let teamId = trim(split(teamUrl, "?")[1]);
+    if (includes(teamId, '&')) {
+      teamId = split(teamId, "&")[1];
+    }
 
-    if (!teamId) {
+    const teamIdNumber = toInteger(teamId);
+
+    if (!teamIdNumber) {
       return {
         completeName: "",
         name: Utils.normalizeName(teamName),
@@ -86,7 +91,7 @@ export class Results {
     }
 
     return {
-      ...await Utils.getTeamInfo(teamId, this.section),
+      ...await Utils.getTeamInfo(teamIdNumber, this.section),
       name: Utils.normalizeName(teamName),
     };
   }
