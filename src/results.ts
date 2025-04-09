@@ -13,6 +13,8 @@ export interface RecordResult {
   awayTeam: Team;
   result: Result;
   goals: number;
+  date: string;
+  matchday: number;
 }
 
 interface Records {
@@ -28,6 +30,7 @@ export interface ResultsData {
 }
 
 export interface Team {
+  originalName: string;
   name: string;
   completeName: string;
   flag: string;
@@ -35,22 +38,24 @@ export interface Team {
 
 
 export class Results {
-  $: cheerio.Root;
+  crossTable$: cheerio.Root;
+  teamCalendarIndex$: cheerio.Root;
   section: string;
  
-  constructor(html: string, section: string) {
-    this.$ = Cheerio.load(html);
+  constructor(crossTableHtml: string, teamCalendarIndexHtml:string, section: string) {
+    this.crossTable$ = Cheerio.load(crossTableHtml);
+    this.teamCalendarIndex$ = Cheerio.load(teamCalendarIndexHtml);
     this.section = section;
   }
 
   async getResults(): Promise<ResultsData> {
-    const rows: cheerio.Cheerio = this.$(
+    const rows: cheerio.Cheerio = this.crossTable$(
       "#calendario > div > div"
     );
 
     const teams = await this.getTeams(rows);
     const results = await this.getResultsArray(rows);
-    const records = this.getRecords(results, teams);
+    const records = await this.getRecords(results, teams);
 
     return {
       teams,
@@ -64,16 +69,16 @@ export class Results {
 
     for(let i = 2; i < rows.length; i++) {
       const row = rows.get(i);
-      const columns = this.$(row).find("div");
+      const columns = this.crossTable$(row).find("div");
 
-      results.push(await this.getTeamInfo(this.$(columns).first().find("a")));
+      results.push(await this.getTeamInfo(this.crossTable$(columns).first().find("a")));
     }
 
     return results;
   }
 
   async getTeamInfo(teamLink: cheerio.Cheerio): Promise<Team> {   
-    const teamName = teamLink.text();
+    const teamName = teamLink.text().trim();
     const teamUrl = teamLink.attr("href");
     let teamId = trim(split(teamUrl, "?")[1]);
     if (includes(teamId, '&')) {
@@ -84,6 +89,7 @@ export class Results {
 
     if (!teamIdNumber) {
       return {
+        originalName: teamName,
         completeName: "",
         name: Utils.normalizeName(teamName),
         flag: "",
@@ -92,6 +98,7 @@ export class Results {
 
     return {
       ...await Utils.getTeamInfo(teamIdNumber, this.section),
+      originalName: teamName,
       name: Utils.normalizeName(teamName),
     };
   }
@@ -103,14 +110,14 @@ export class Results {
     rows.each((i, row) => {
       if (i < 2) return;
 
-      const rowColumns = this.$(row).find("div");
+      const rowColumns = this.crossTable$(row).find("div");
 
       const rowResults: Array<Result> = [];
 
       rowColumns.each((j, column) => {
         if (j < 2) return;
 
-        const result = this.$(column).text();
+        const result = this.crossTable$(column).text();
 
         if (result && includes(result, "-")) {
           const [home, away] = split(result, "-");
@@ -127,7 +134,7 @@ export class Results {
     return results;
   }
   
-  getRecords(results: Array<Array<Result>>, teams: Array<Team>): Records {
+  async getRecords(results: Array<Array<Result>>, teams: Array<Team>): Promise<Records> {
     let biggestHomeWin: Array<RecordResult> = [];
     let biggestAwayWin: Array<RecordResult> = [];
     let moreGoalsMatch: Array<RecordResult> = [];
@@ -146,6 +153,8 @@ export class Results {
                 awayTeam: teams[j],
                 result,
                 goals: goalDifference,
+                date: undefined,
+                matchday: undefined,
               }
             ];
           } else if (goalDifference === biggestHomeWin[0].goals) {
@@ -154,6 +163,8 @@ export class Results {
               awayTeam: teams[j],
               result,
               goals: goalDifference,
+              date: undefined,
+              matchday: undefined,
             });
           }
         }
@@ -165,14 +176,18 @@ export class Results {
               awayTeam: teams[j],
               result,
               goals: Math.abs(goalDifference),
-            }];
+              date: undefined,
+              matchday: undefined,
+           }];
           } else if (Math.abs(goalDifference) === biggestAwayWin[0].goals) {
             biggestAwayWin.push({
               homeTeam: teams[i],
               awayTeam: teams[j],
               result,
               goals: Math.abs(goalDifference),
-            });
+              date: undefined,
+              matchday: undefined,
+           });
           }
         }
 
@@ -183,6 +198,8 @@ export class Results {
               awayTeam: teams[j],
               result,
               goals: result.home + result.away,
+              date: undefined,
+              matchday: undefined,
             }];
           } else if (result.home + result.away === moreGoalsMatch[0].goals) {
             moreGoalsMatch.push({
@@ -190,16 +207,36 @@ export class Results {
               awayTeam: teams[j],
               result,
               goals: result.home + result.away,
+              date: undefined,
+              matchday: undefined,
             });
           }
         }
       }
     }
+    
+    // return {
+    //   biggestHomeWin,
+    //   biggestAwayWin,
+    //   moreGoalsMatch,
+    // }
 
-    return {
+    return await this._fillDateAndMatchday({
       biggestHomeWin,
       biggestAwayWin,
       moreGoalsMatch,
-    };
+    });
+  }
+
+  private async _fillDateAndMatchday(records: Records): Promise<Records> {
+    for(let recordType of Object.values(records) as Array<Array<RecordResult>>) {
+      for(let record of recordType) {
+        const { date, matchday } = await Utils.getDateAndMatchdayFromCalendarTeam(record, this.teamCalendarIndex$, this.section);
+        record.date = date;
+        record.matchday = matchday;
+      }
+    }
+
+    return records;
   }
 }

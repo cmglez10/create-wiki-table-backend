@@ -1,6 +1,8 @@
 import axios from "axios";
 import Cheerio from "cheerio";
-import { join, last, replace, split, trim } from "lodash";
+import { find, join, last, replace, split, toInteger, trim } from "lodash";
+import { COMPETITION_URL, FUTBOL_REGIONAL_BASE_URL } from "./constants/url-constants";
+import { RecordResult } from "./results";
 
 export interface TeamInfo {
   completeName: string;
@@ -104,6 +106,58 @@ export class Utils {
         completeName: "",
         flag: "",
       };
+    }
+  }
+
+
+  static async getHtml(url: string): Promise<string> {
+    const html = await axios(url);
+    return html.data;
+  }
+
+  static getCompetitionUrl(competition: string, section: string): string {
+    return `${FUTBOL_REGIONAL_BASE_URL}${COMPETITION_URL}?com=${competition}&sec=${section}`;
+  }
+
+  static async getDateAndMatchdayFromCalendarTeam(record: RecordResult, calendarTeam$: cheerio.Root, section: string): Promise<{date: string, matchday: number}>{
+    const teamButtons = calendarTeam$("#calendario > a > div#tem-competicion");
+    
+    const teamButton = find(teamButtons, (button) => {
+      return calendarTeam$(button).text().trim() === record.homeTeam.originalName;
+    });
+
+    const teamResultsUrl = split(calendarTeam$(teamButton).parent().attr("href"), "'")[1];
+    const teamResultsHtml = await this.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${teamResultsUrl}`);
+    const teamResults$ = Cheerio.load(teamResultsHtml);
+    const rivalCells = teamResults$("table.clasificacion td > a").parent();
+    const rivalCell = find(rivalCells, (cell) => {
+      return teamResults$(cell).text().trim() === record.awayTeam.originalName;
+    });
+    const firstResult = teamResults$(rivalCell).next().next().next().next().text().trim();
+    console.log('firstResult', firstResult);
+    const recordResult = `${record.result.home}-${record.result.away}`;
+    console.log('recordResult', recordResult);
+    if (firstResult === recordResult) {
+      console.log('primera vuelta');
+      console.log('return', {
+        date: split(teamResults$(rivalCell).next().next().text().trim(), ", ")[1],
+        matchday: toInteger(teamResults$(rivalCell).next().next().next().text().trim()),
+      });
+
+      return {
+        date: split(teamResults$(rivalCell).next().next().text().trim(), ", ")[1],
+        matchday: toInteger(teamResults$(rivalCell).next().next().next().text().trim()),
+      }
+    } else {
+      console.log('segunda vuelta');
+      console.log('return', {
+        date: split(teamResults$(rivalCell).next().next().next().next().next().next().text().trim(), ", ")[1],
+        matchday: toInteger(teamResults$(rivalCell).next().next().next().next().next().next().next().text().trim()),
+      });
+      return {
+        date: split(teamResults$(rivalCell).next().next().next().next().next().next().text().trim(), ", ")[1],
+        matchday: toInteger(teamResults$(rivalCell).next().next().next().next().next().next().next().text().trim()),
+      }
     }
   }
 }
