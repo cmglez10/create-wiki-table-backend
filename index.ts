@@ -30,7 +30,7 @@ router
     const res = await scrap.fetchResults(ctx.params.groupId, ctx.params.section);
     ctx.body = res;  
   })
-  .post("/results/section/:section", async (ctx: Koa.Context) => {
+  .post("/records/section/:section", async (ctx: Koa.Context) => {
     const body = ctx.request.body;
     const section: string = ctx.params.section;
     const res = await scrap.fetchRecordsFromManyGroups(body.groupIds, section);
