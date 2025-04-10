@@ -1,3 +1,4 @@
+import { bodyParser } from "@koa/bodyparser";
 import cors from "@koa/cors";
 import Koa from "koa";
 import Router from "koa-router";
@@ -6,6 +7,7 @@ import { Scrap } from "./src/scrap";
 const app: Koa = new Koa();
 const router = new Router();
 app.use(cors());
+app.use(bodyParser());
 const scrap = new Scrap();
 
 router
@@ -26,6 +28,12 @@ router
   })
   .get("/results/:groupId/section/:section", async (ctx: Koa.Context) => {
     const res = await scrap.fetchResults(ctx.params.groupId, ctx.params.section);
+    ctx.body = res;  
+  })
+  .post("/results/section/:section", async (ctx: Koa.Context) => {
+    const body = ctx.request.body;
+    const section: string = ctx.params.section;
+    const res = await scrap.fetchRecordsFromManyGroups(body.groupIds, section);
     ctx.body = res;  
   });
 

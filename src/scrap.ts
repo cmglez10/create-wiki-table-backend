@@ -1,9 +1,9 @@
 import Cheerio from "cheerio";
-import { split } from "lodash";
+import { reduce, split } from "lodash";
 import { FUTBOL_REGIONAL_BASE_URL } from "./constants/url-constants";
 import { League, Team } from "./league";
 import { PlayoffRound, Playoffs } from "./playoff";
-import { Results, ResultsData } from "./results";
+import { Records, Results, ResultsData } from "./results";
 import { Utils } from "./utils";
 
 
@@ -33,5 +33,34 @@ export class Scrap {
 
     const  results = new Results(crossTableHtml, teamCalendarHtml, section);
     return results.getResults();
+  }
+
+  async fetchRecordsFromManyGroups(groupIds: string[], section: string): Promise<Records> {
+    return await reduce(groupIds, async (acc: Promise<Records>, groupId: string) => {
+      const currentRecords = (await this.fetchResults(groupId, section)).records;
+      const accResult = await acc;
+
+      if (!accResult.biggestHomeWin.length || currentRecords.biggestHomeWin[0].goals > accResult.biggestHomeWin[0].goals) {
+        accResult.biggestHomeWin = currentRecords.biggestHomeWin;
+      } else if (currentRecords.biggestHomeWin[0].goals === accResult.biggestHomeWin[0].goals) {
+        accResult.biggestHomeWin = [...accResult.biggestHomeWin, ...currentRecords.biggestHomeWin];
+      }
+      if (!accResult.biggestAwayWin.length || currentRecords.biggestAwayWin[0].goals > accResult.biggestAwayWin[0].goals) {
+        accResult.biggestAwayWin = currentRecords.biggestAwayWin;
+      } else if (currentRecords.biggestAwayWin[0].goals === accResult.biggestAwayWin[0].goals) {
+        accResult.biggestAwayWin = [...accResult.biggestAwayWin, ...currentRecords.biggestAwayWin];
+      }
+      if (!accResult.moreGoalsMatch.length || currentRecords.moreGoalsMatch[0].goals > accResult.moreGoalsMatch[0].goals) {
+        accResult.moreGoalsMatch = currentRecords.moreGoalsMatch;
+      } else if (currentRecords.moreGoalsMatch[0].goals === accResult.moreGoalsMatch[0].goals) {
+        accResult.moreGoalsMatch = [...accResult.moreGoalsMatch, ...currentRecords.moreGoalsMatch];
+      }
+      return accResult;
+    }, Promise.resolve({
+      biggestHomeWin: [],
+      biggestAwayWin: [],
+      moreGoalsMatch: [],
+    }));
+  
   }
 }
