@@ -31,7 +31,7 @@ export class Scrap {
     const teamCalendarUrl = split(hrefTeamCalendar, "'")[1];
     const teamCalendarHtml = await Utils.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${teamCalendarUrl}`);
 
-    const  results = new Results(crossTableHtml, teamCalendarHtml, section);
+    const  results = new Results(crossTableHtml, teamCalendarHtml, section, parseInt(competition));
     return results.getResults();
   }
 

@@ -15,6 +15,7 @@ export interface RecordResult {
   goals: number;
   date: string;
   matchday: number;
+  groupId: number;
 }
 
 export interface Records {
@@ -40,12 +41,10 @@ export interface Team {
 export class Results {
   crossTable$: cheerio.Root;
   teamCalendarIndex$: cheerio.Root;
-  section: string;
  
-  constructor(crossTableHtml: string, teamCalendarIndexHtml:string, section: string) {
+  constructor(crossTableHtml: string, teamCalendarIndexHtml:string, private _section: string, private _groupId: number) {
     this.crossTable$ = Cheerio.load(crossTableHtml);
     this.teamCalendarIndex$ = Cheerio.load(teamCalendarIndexHtml);
-    this.section = section;
   }
 
   async getResults(): Promise<ResultsData> {
@@ -97,7 +96,7 @@ export class Results {
     }
 
     return {
-      ...await Utils.getTeamInfo(teamIdNumber, this.section),
+      ...await Utils.getTeamInfo(teamIdNumber, this._section),
       originalName: teamName,
       name: Utils.normalizeName(teamName),
     };
@@ -155,6 +154,7 @@ export class Results {
                 goals: goalDifference,
                 date: undefined,
                 matchday: undefined,
+                groupId: this._groupId,
               }
             ];
           } else if (goalDifference === biggestHomeWin[0].goals) {
@@ -165,6 +165,7 @@ export class Results {
               goals: goalDifference,
               date: undefined,
               matchday: undefined,
+              groupId: this._groupId,
             });
           }
         }
@@ -178,6 +179,7 @@ export class Results {
               goals: Math.abs(goalDifference),
               date: undefined,
               matchday: undefined,
+              groupId: this._groupId,
            }];
           } else if (Math.abs(goalDifference) === biggestAwayWin[0].goals) {
             biggestAwayWin.push({
@@ -187,6 +189,7 @@ export class Results {
               goals: Math.abs(goalDifference),
               date: undefined,
               matchday: undefined,
+              groupId: this._groupId,
            });
           }
         }
@@ -200,6 +203,7 @@ export class Results {
               goals: result.home + result.away,
               date: undefined,
               matchday: undefined,
+              groupId: this._groupId,
             }];
           } else if (result.home + result.away === moreGoalsMatch[0].goals) {
             moreGoalsMatch.push({
@@ -209,17 +213,12 @@ export class Results {
               goals: result.home + result.away,
               date: undefined,
               matchday: undefined,
+              groupId: this._groupId,
             });
           }
         }
       }
     }
-    
-    // return {
-    //   biggestHomeWin,
-    //   biggestAwayWin,
-    //   moreGoalsMatch,
-    // }
 
     return await this._fillDateAndMatchday({
       biggestHomeWin,
@@ -231,7 +230,7 @@ export class Results {
   private async _fillDateAndMatchday(records: Records): Promise<Records> {
     for(let recordType of Object.values(records) as Array<Array<RecordResult>>) {
       for(let record of recordType) {
-        const { date, matchday } = await Utils.getDateAndMatchdayFromCalendarTeam(record, this.teamCalendarIndex$, this.section);
+        const { date, matchday } = await Utils.getDateAndMatchdayFromCalendarTeam(record, this.teamCalendarIndex$, this._section);
         record.date = date;
         record.matchday = matchday;
       }
