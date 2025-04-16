@@ -134,26 +134,13 @@ export class Utils {
       return teamResults$(cell).text().trim() === record.awayTeam.originalName;
     });
     const firstResult = teamResults$(rivalCell).next().next().next().next().text().trim();
-    console.log('firstResult', firstResult);
     const recordResult = `${record.result.home}-${record.result.away}`;
-    console.log('recordResult', recordResult);
     if (firstResult === recordResult) {
-      console.log('primera vuelta');
-      console.log('return', {
-        date: split(teamResults$(rivalCell).next().next().text().trim(), ", ")[1],
-        matchday: toInteger(teamResults$(rivalCell).next().next().next().text().trim()),
-      });
-
       return {
         date: split(teamResults$(rivalCell).next().next().text().trim(), ", ")[1],
         matchday: toInteger(teamResults$(rivalCell).next().next().next().text().trim()),
       }
     } else {
-      console.log('segunda vuelta');
-      console.log('return', {
-        date: split(teamResults$(rivalCell).next().next().next().next().next().next().text().trim(), ", ")[1],
-        matchday: toInteger(teamResults$(rivalCell).next().next().next().next().next().next().next().text().trim()),
-      });
       return {
         date: split(teamResults$(rivalCell).next().next().next().next().next().next().text().trim(), ", ")[1],
         matchday: toInteger(teamResults$(rivalCell).next().next().next().next().next().next().next().text().trim()),
