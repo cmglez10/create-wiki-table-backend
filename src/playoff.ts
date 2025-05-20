@@ -1,5 +1,5 @@
 import Cheerio from "cheerio";
-import { last, split, toNumber, trim } from "lodash";
+import { includes, last, split, toNumber, trim } from "lodash";
 import { TeamInfo, Utils } from "./utils";
 
 export interface PlayoffMatch {
@@ -33,7 +33,7 @@ export class Playoffs {
 
   teamsInfo: Record<number, TeamInfo> = {};
 
-  constructor(html: string) {
+  constructor(html: string, private _section: string) {
     this.$ = Cheerio.load(html);
     this.rounds = [];
   }
@@ -136,7 +136,12 @@ export class Playoffs {
 
   async getTeamInfo(teamLink: cheerio.Cheerio): Promise<TeamInfo> {
     const teamUrl = teamLink.attr("href");
-    const teamId: number = parseInt(trim(split(teamUrl, "?")[1]));
+    let teamId: number;
+    if (includes(teamUrl, "&")) {
+      teamId = parseInt(split(teamUrl, "&")[1]);
+    } else {
+      teamId = parseInt(trim(split(teamUrl, "?")[1]));
+    }
 
     if (!teamId) {
       return {
@@ -146,7 +151,7 @@ export class Playoffs {
     }
 
     if (!this.teamsInfo[teamId]) {
-      this.teamsInfo[teamId] = await Utils.getTeamInfo(teamId, 'm');
+      this.teamsInfo[teamId] = await Utils.getTeamInfo(teamId, this._section);
     }
 
     return this.teamsInfo[teamId];

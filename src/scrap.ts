@@ -17,7 +17,7 @@ export class Scrap {
 
   async fetchPlayoff(competition: string, section: string): Promise<PlayoffRound[]> {
     const html = await Utils.getHtml(Utils.getCompetitionUrl(competition, section));
-    const playoffs = new Playoffs(html);
+    const playoffs = new Playoffs(html, section);
     return playoffs.getPlayoffs();
   }
 
