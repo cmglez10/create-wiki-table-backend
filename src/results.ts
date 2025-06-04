@@ -1,6 +1,6 @@
 import Cheerio from "cheerio";
 import { includes, split, toInteger, trim } from "lodash";
-import { Utils } from "./utils";
+import { Team, Utils } from "./utils";
 
 
 export interface Result {
@@ -28,13 +28,6 @@ export interface ResultsData {
   teams: Array<Team>;
   results: Array<Array<Result>>;
   records: Records;
-}
-
-export interface Team {
-  originalName: string;
-  name: string;
-  completeName: string;
-  flag: string;
 }
 
 
@@ -79,24 +72,9 @@ export class Results {
   async getTeamInfo(teamLink: cheerio.Cheerio): Promise<Team> {   
     const teamName = teamLink.text().trim();
     const teamUrl = teamLink.attr("href");
-    let teamId = trim(split(teamUrl, "?")[1]);
-    if (includes(teamId, '&')) {
-      teamId = split(teamId, "&")[1];
-    }
-
-    const teamIdNumber = toInteger(teamId);
-
-    if (!teamIdNumber) {
-      return {
-        originalName: teamName,
-        completeName: "",
-        name: Utils.normalizeName(teamName),
-        flag: "",
-      };
-    }
 
     return {
-      ...await Utils.getTeamInfo(teamIdNumber, this._section),
+      ...await Utils.getTeamInfo(teamUrl),
       originalName: teamName,
       name: Utils.normalizeName(teamName),
     };
@@ -230,7 +208,7 @@ export class Results {
   private async _fillDateAndMatchday(records: Records): Promise<Records> {
     for(let recordType of Object.values(records) as Array<Array<RecordResult>>) {
       for(let record of recordType) {
-        const { date, matchday } = await Utils.getDateAndMatchdayFromCalendarTeam(record, this.teamCalendarIndex$, this._section);
+        const { date, matchday } = await Utils.getDateAndMatchdayFromCalendarTeam(record, this.teamCalendarIndex$);
         record.date = date;
         record.matchday = matchday;
       }

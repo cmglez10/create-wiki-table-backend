@@ -6,10 +6,18 @@ import { RecordResult } from "./results";
 
 export interface TeamInfo {
   completeName: string;
-  flag: string;
+  region: string;
+  town: string;
 }
 
-const BASE_URL = "https://www.futbol-regional.es/";
+export interface Team {
+  originalName: string;
+  completeName: string;
+  name: string;
+  region: string;
+  town: string;
+  shield?: string;
+}
 
 const translateFlag: Record<string, string> = {
   "Comunitat Valenciana": "Comunidad Valenciana",
@@ -35,7 +43,7 @@ export class Utils {
   }
 
   static getBaseUrl(): string {
-    return BASE_URL;
+    return FUTBOL_REGIONAL_BASE_URL;
   }
 
   static getCompleteName(team$: cheerio.Root): string {
@@ -48,41 +56,49 @@ export class Utils {
     return cName;
   }
 
+  static getTown(team$: cheerio.Root): string {
+    const addressElement =  team$(this.getTeamInfoData(team$, "Domicilio social:"))
+    return team$(team$(addressElement)).children().first().text().trim();
+  }
+
   static normalizeName(name: string): string {
     return Utils.addQuotes(
       replace(trim(replace(name, new RegExp("\\.", "g"), ". ")), "  ", " ")
     );
   }
 
-  static async getFlag(team$: cheerio.Root): Promise<string> {
+  static getTeamInfoData(team$: cheerio.Root, data: string): cheerio.Cheerio {
     let elementOrder = 0;
     team$(
       team$("#informacion")
         .children()
         .each((i, elem) => {
-          if (team$(elem).text().trim() === "Domicilio social:") {
+          if (team$(elem).text().trim() === data) {
             elementOrder = i + 1;
           }
         })
     );
 
-    const links = team$(
+    return team$(
       team$("#informacion").children()[elementOrder]
-    ).children();
+    );
+  }
+
+  static async getRegion(team$: cheerio.Root): Promise<string> {
+    const links = team$(this.getTeamInfoData(team$, "Domicilio social:")).children();
+
     let flag = "";
     if (links.length === 2) {
-      flag = team$(
-        team$(team$("#informacion").children()[elementOrder]).children()[0]
-      )
+      flag = team$(links[0])
         .text()
         .trim();
     } else {
       const provinceUrl = team$(
-        team$(team$("#informacion").children()[elementOrder]).children()[1]
-      ).attr("href");
-
-      const provinceHtml = await axios(BASE_URL + provinceUrl);
-      const province$ = Cheerio.load(await provinceHtml.data);
+        team$(links[1])
+      ).attr("href");    
+    
+      const provinceHtml = await Utils.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${provinceUrl}`);
+      const province$ = Cheerio.load(await provinceHtml);
       flag = split(
         split(province$("#derecha_sup_fic").text(), " :: ")[1],
         "("
@@ -93,25 +109,36 @@ export class Utils {
     return translateFlag[flag] ?? flag;
   }
 
-  static async getTeamInfo(teamId: number, section: string): Promise<TeamInfo> {
+  static async getTeamInfo(teamUrl: string): Promise<TeamInfo> {
+    const url = `${FUTBOL_REGIONAL_BASE_URL}${teamUrl}`
+    
     try {
-      const html = await axios(`${BASE_URL}equipo.php?sec=${section}&${teamId}`);
-      const team$ = Cheerio.load(await html.data);
-      return {
+      const data = await Utils.getHtml(url);
+
+      const team$ = Cheerio.load(await data);
+
+      const teamInfo = {
         completeName: Utils.getCompleteName(team$),
-        flag: await Utils.getFlag(team$),
+        region: await Utils.getRegion(team$),
+        town: Utils.getTown(team$),
       };
+
+      console.log(`Fetching team info from ${url}`, JSON.stringify(teamInfo, null, 2));
+
+      return teamInfo;
     } catch (e) {
+      console.log(`Error fetching team info from ${url}:`);
       return {
         completeName: "",
-        flag: "",
+        region: "",
+        town: "",
       };
     }
   }
 
 
   static async getHtml(url: string): Promise<string> {
-    const html = await axios(url);
+    const html = await axios.get(url);
     return html.data;
   }
 
@@ -119,7 +146,7 @@ export class Utils {
     return `${FUTBOL_REGIONAL_BASE_URL}${COMPETITION_URL}?com=${competition}&sec=${section}`;
   }
 
-  static async getDateAndMatchdayFromCalendarTeam(record: RecordResult, calendarTeam$: cheerio.Root, section: string): Promise<{date: string, matchday: number}>{
+  static async getDateAndMatchdayFromCalendarTeam(record: RecordResult, calendarTeam$: cheerio.Root): Promise<{date: string, matchday: number}>{
     const teamButtons = calendarTeam$("#calendario > a > div#tem-competicion");
     
     const teamButton = find(teamButtons, (button) => {

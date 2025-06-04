@@ -1,18 +1,18 @@
 import Cheerio from "cheerio";
-import { reduce, split } from "lodash";
+import { map, reduce, split } from "lodash";
 import { FUTBOL_REGIONAL_BASE_URL } from "./constants/url-constants";
-import { League, Team } from "./league";
+import { League, LeagueTeam } from "./league";
 import { PlayoffRound, Playoffs } from "./playoff";
 import { Records, Results, ResultsData } from "./results";
-import { Utils } from "./utils";
+import { Team, TeamInfo, Utils } from "./utils";
 
 
 
 export class Scrap {
-  async fetchLeague(competition: string, section: string): Promise<Team[]> {
+  async fetchLeague(competition: string, section: string): Promise<LeagueTeam[]> {
     const html = await Utils.getHtml(Utils.getCompetitionUrl(competition, section));
     const league = new League(html);
-    return league.getTeams(section);
+    return league.getTeams();
   }
 
   async fetchPlayoff(competition: string, section: string): Promise<PlayoffRound[]> {
@@ -61,6 +61,32 @@ export class Scrap {
       biggestAwayWin: [],
       moreGoalsMatch: [],
     }));
-  
+  }
+
+  async fetchParticipantsFromGroup(groupId: string, section: string): Promise<Team[]> {
+    console.log(`Fetching participants from group: ${groupId}`);
+    const html = await Utils.getHtml(Utils.getCompetitionUrl(groupId, section));
+    const league = new League(html);
+    const teams: LeagueTeam[] = await league.getTeams();
+    console.log(`Found ${teams.length} teams in group ${groupId}`);
+    return map(teams, (team => {
+      return {
+        originalName: team.originalName,
+        completeName: team.teamInfo.completeName,
+        name: team.name,
+        region: team.teamInfo.region,
+        town: team.teamInfo.town,
+        shield: team.shield,
+      };
+    }));
+  }
+
+  async fetchParticipantsFromManyGroups(groupIds: string[], section: string): Promise<TeamInfo[]> {
+    console.log(`Fetching participants from groups: ${groupIds.join(', ')}`);
+    return await reduce(groupIds, async (acc: Promise<TeamInfo[]>, groupId: string) => {
+      const currentParticipants = await this.fetchParticipantsFromGroup(groupId, section);
+      const accResult = await acc;
+      return [...accResult, ...currentParticipants];
+    }, Promise.resolve([]));
   }
 }

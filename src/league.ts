@@ -1,11 +1,11 @@
 import Cheerio from "cheerio";
-import { split, trim } from "lodash";
-import { Utils } from "./utils";
+import { TeamInfo, Utils } from "./utils";
 
-export interface Team {
+export interface LeagueTeam {
+  teamInfo: TeamInfo;
   position: number;
   name: string;
-  completeName: string;
+  originalName: string;
   shield: string;
   points: number;
   played: number;
@@ -25,15 +25,16 @@ export class League {
     this.$ = Cheerio.load(html);
   }
 
-  async getTeams(section: string) {
-    const teams: Team[] = [];
+  async getTeams(): Promise<LeagueTeam[]> {
+    const teams: LeagueTeam[] = [];
     const rows: cheerio.Cheerio = this.$("#clasificacion1 .tablagen .fila");
 
     for (let i = 0; i < rows.length; i++) {
-      const team: Team = {
+      const team: LeagueTeam = {
+        teamInfo: await this.getTeamInfo(rows[i]),
         position: Number(this.getColumn(rows[i], 2)),
         name: this.getName(rows[i]),
-        completeName: await this.getCompleteName(rows[i], section),
+        originalName: this.getColumn(rows[i], 3),
         shield: this.getShieldUrl(rows[i]),
         points: Number(this.getColumn(rows[i], 6)),
         played: Number(this.getColumn(rows[i], 7)),
@@ -53,7 +54,7 @@ export class League {
   }
 
   getColumn(row: cheerio.Element, columnIndex: number): string {
-    return this.$(this.$(row).children()[columnIndex]).text();
+    return this.$(this.$(row).children()[columnIndex]).text().trim();
   }
 
   getShieldUrl(row: cheerio.Element): string {
@@ -63,15 +64,18 @@ export class League {
     );
   }
 
+  getUrl(row: cheerio.Element): string {
+    return this.$(this.$(row).children()[2]).find("a").attr("href");
+  }
+
   getName(row: cheerio.Element): string {
     const name = this.getColumn(row, 3);
 
     return Utils.normalizeName(name);
   }
 
-  async getCompleteName(row: cheerio.Element, section: string): Promise<string> {
+  async getTeamInfo(row: cheerio.Element): Promise<TeamInfo> {
     const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
-    const teamId: number = parseInt(trim(split(teamUrl, "/")[1]));
-    return (await Utils.getTeamInfo(teamId, section)).completeName;
+    return Utils.getTeamInfo(teamUrl);
   }
 }

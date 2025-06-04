@@ -1,5 +1,5 @@
 import Cheerio from "cheerio";
-import { includes, last, split, toNumber, trim } from "lodash";
+import { last, split, toNumber, trim } from "lodash";
 import { TeamInfo, Utils } from "./utils";
 
 export interface PlayoffMatch {
@@ -31,7 +31,7 @@ export class Playoffs {
   $: cheerio.Root;
   rounds: PlayoffRound[];
 
-  teamsInfo: Record<number, TeamInfo> = {};
+  teamsInfo: Record<string, TeamInfo> = {};
 
   constructor(html: string, private _section: string) {
     this.$ = Cheerio.load(html);
@@ -124,8 +124,8 @@ export class Playoffs {
       ),
       homeCompleteName: homeTeamInfo.completeName,
       awayCompleteName: awayTeamInfo.completeName,
-      homeFlag: homeTeamInfo.flag,
-      awayFlag: awayTeamInfo.flag,
+      homeFlag: homeTeamInfo.region,
+      awayFlag: awayTeamInfo.region,
       homeGoals: Number(resultArray[0]),
       awayGoals: Number(resultArray[1]),
       extraTime: !!(homePenalties || awayPenalties),
@@ -136,25 +136,12 @@ export class Playoffs {
 
   async getTeamInfo(teamLink: cheerio.Cheerio): Promise<TeamInfo> {
     const teamUrl = teamLink.attr("href");
-    let teamId: number;
-    if (includes(teamUrl, "&")) {
-      teamId = parseInt(split(teamUrl, "&")[1]);
-    } else {
-      teamId = parseInt(trim(split(teamUrl, "?")[1]));
+
+    if (!this.teamsInfo[teamUrl]) {
+      this.teamsInfo[teamUrl] = await Utils.getTeamInfo(teamUrl);
     }
 
-    if (!teamId) {
-      return {
-        completeName: "",
-        flag: "",
-      };
-    }
-
-    if (!this.teamsInfo[teamId]) {
-      this.teamsInfo[teamId] = await Utils.getTeamInfo(teamId, this._section);
-    }
-
-    return this.teamsInfo[teamId];
+    return this.teamsInfo[teamUrl];
   }
 
   async getPenalties(row: cheerio.Cheerio): Promise<Partial<PlayoffMatch>> {

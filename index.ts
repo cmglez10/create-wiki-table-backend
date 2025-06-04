@@ -5,8 +5,9 @@ import Router from "koa-router";
 import { Scrap } from "./src/scrap";
 
 const app: Koa = new Koa();
-const router = new Router();
 app.use(cors());
+
+const router = new Router();
 app.use(bodyParser());
 const scrap = new Scrap();
 
@@ -34,7 +35,13 @@ router
     const body = ctx.request.body;
     const section: string = ctx.params.section;
     const res = await scrap.fetchRecordsFromManyGroups(body.groupIds, section);
-    ctx.body = res;  
+    ctx.body = res;
+  })
+  .post("/participants/section/:section", async (ctx: Koa.Context) => {
+    const body = ctx.request.body;
+    const section: string = ctx.params.section;
+    const res = await scrap.fetchParticipantsFromManyGroups(body.groupIds, section);
+    ctx.body = res;
   });
 
 app.use(router.routes());
