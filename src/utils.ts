@@ -8,6 +8,8 @@ export interface TeamInfo {
   completeName: string;
   region: string;
   town: string;
+  foundationYear: string;
+  ground: string;
 }
 
 export interface Team {
@@ -16,7 +18,9 @@ export interface Team {
   name: string;
   region: string;
   town: string;
-  shield?: string;
+  foundationYear: string;
+  ground: string;
+  shield?: string; 
 }
 
 const translateFlag: Record<string, string> = {
@@ -58,7 +62,17 @@ export class Utils {
 
   static getTown(team$: cheerio.Root): string {
     const addressElement =  team$(this.getTeamInfoData(team$, "Domicilio social:"))
-    return team$(team$(addressElement)).children().first().text().trim();
+    return team$(addressElement).children().first().text().trim();
+  }
+
+  static getTeamFoundationYear(team$: cheerio.Root): string {
+    const fundationElement = team$(this.getTeamInfoData(team$, "Alta:"));
+    return team$(fundationElement).text().trim();
+  }
+
+  static getTeamGround(team$: cheerio.Root): string {
+    const groundElement = team$(this.getTeamInfoData(team$, "Terrenos de juego:"));
+    return team$(groundElement).find("a").first().text().trim();
   }
 
   static normalizeName(name: string): string {
@@ -121,6 +135,8 @@ export class Utils {
         completeName: Utils.getCompleteName(team$),
         region: await Utils.getRegion(team$),
         town: Utils.getTown(team$),
+        foundationYear: Utils.getTeamFoundationYear(team$),
+        ground: Utils.getTeamGround(team$),
       };
 
       console.log(`Fetching team info from ${url}`, JSON.stringify(teamInfo, null, 2));
@@ -132,6 +148,8 @@ export class Utils {
         completeName: "",
         region: "",
         town: "",
+        foundationYear: "",
+        ground: "",
       };
     }
   }

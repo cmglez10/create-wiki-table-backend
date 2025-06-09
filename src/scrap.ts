@@ -76,6 +76,8 @@ export class Scrap {
         name: team.name,
         region: team.teamInfo.region,
         town: team.teamInfo.town,
+        foundationYear: team.teamInfo.foundationYear,
+        ground: team.teamInfo.ground,
         shield: team.shield,
       };
     }));
