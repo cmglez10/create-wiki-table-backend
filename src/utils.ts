@@ -10,6 +10,7 @@ export interface TeamInfo {
   town: string;
   foundationYear: string;
   ground: string;
+  coordinates?: Array<string>;
 }
 
 export interface Team {
@@ -20,7 +21,8 @@ export interface Team {
   town: string;
   foundationYear: string;
   ground: string;
-  shield?: string; 
+  shield?: string;
+  coordinates?: Array<string>;
 }
 
 const translateFlag: Record<string, string> = {
@@ -70,7 +72,7 @@ export class Utils {
     return team$(fundationElement).text().trim();
   }
 
-  static getTeamGround(team$: cheerio.Root): string {
+  static getTeamGroundName(team$: cheerio.Root): string {
     const groundElement = team$(this.getTeamInfoData(team$, "Terrenos de juego:"));
     return team$(groundElement).find("a").first().text().trim();
   }
@@ -112,7 +114,7 @@ export class Utils {
       ).attr("href");    
     
       const provinceHtml = await Utils.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${provinceUrl}`);
-      const province$ = Cheerio.load(await provinceHtml);
+      const province$ = Cheerio.load(provinceHtml);
       flag = split(
         split(province$("#derecha_sup_fic").text(), " :: ")[1],
         "("
@@ -123,7 +125,7 @@ export class Utils {
     return translateFlag[flag] ?? flag;
   }
 
-  static async getTeamInfo(teamUrl: string): Promise<TeamInfo> {
+  static async getTeamInfo(teamUrl: string, options: {region: boolean, coordinates: boolean} = {region: true, coordinates: true}): Promise<TeamInfo> {
     const url = `${FUTBOL_REGIONAL_BASE_URL}${teamUrl}`
     
     try {
@@ -131,12 +133,13 @@ export class Utils {
 
       const team$ = Cheerio.load(await data);
 
-      const teamInfo = {
+      const teamInfo: TeamInfo = {
         completeName: Utils.getCompleteName(team$),
-        region: await Utils.getRegion(team$),
+        region: options.region ?  await Utils.getRegion(team$): "",
         town: Utils.getTown(team$),
         foundationYear: Utils.getTeamFoundationYear(team$),
-        ground: Utils.getTeamGround(team$),
+        ground: Utils.getTeamGroundName(team$),
+        coordinates: options.coordinates ? await Utils.getCoordinates(team$) : null,
       };
 
       console.log(`Fetching team info from ${url}`, JSON.stringify(teamInfo, null, 2));
@@ -153,6 +156,20 @@ export class Utils {
       };
     }
   }
+
+  static async getCoordinates(team$: cheerio.Root): Promise<Array<string>> {
+    const groundElement = team$(this.getTeamInfoData(team$, "Terrenos de juego:"));
+    const groundUrl = team$(groundElement).find("a").first().attr("href");
+    if (!groundUrl) {
+      return null;
+    }
+    const groundHtml = await Utils.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${groundUrl}`);
+    const ground$ = Cheerio.load(groundHtml);
+    const gmapsUrl = ground$("#tdj_izq").find("#tdj_map").next().find("a").attr("href");
+    const coordinates = split(split(gmapsUrl, "q=")[1], ",");
+    return coordinates;
+  }
+
 
 
   static async getHtml(url: string): Promise<string> {

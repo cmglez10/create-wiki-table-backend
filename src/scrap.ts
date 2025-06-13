@@ -79,6 +79,7 @@ export class Scrap {
         foundationYear: team.teamInfo.foundationYear,
         ground: team.teamInfo.ground,
         shield: team.shield,
+        coordinates: team.teamInfo.coordinates,
       };
     }));
   }

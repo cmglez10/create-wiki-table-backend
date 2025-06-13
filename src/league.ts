@@ -76,6 +76,6 @@ export class League {
 
   async getTeamInfo(row: cheerio.Element): Promise<TeamInfo> {
     const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
-    return Utils.getTeamInfo(teamUrl);
+    return Utils.getTeamInfo(teamUrl,{region: false, coordinates: false});
   }
 }
