@@ -1,5 +1,5 @@
 import Cheerio from "cheerio";
-import { TeamInfo, Utils } from "./utils";
+import { TeamInfo, TeamInfoRequestOptions, Utils } from "./utils";
 
 export interface LeagueTeam {
   teamInfo: TeamInfo;
@@ -25,13 +25,13 @@ export class League {
     this.$ = Cheerio.load(html);
   }
 
-  async getTeams(): Promise<LeagueTeam[]> {
+  async getTeams(options: TeamInfoRequestOptions = { region: false, coordinates: false } ): Promise<LeagueTeam[]> {
     const teams: LeagueTeam[] = [];
     const rows: cheerio.Cheerio = this.$("#clasificacion1 .tablagen .fila");
 
     for (let i = 0; i < rows.length; i++) {
       const team: LeagueTeam = {
-        teamInfo: await this.getTeamInfo(rows[i]),
+        teamInfo: await this.getTeamInfo(rows[i], options),
         position: Number(this.getColumn(rows[i], 2)),
         name: this.getName(rows[i]),
         originalName: this.getColumn(rows[i], 3),
@@ -74,8 +74,8 @@ export class League {
     return Utils.normalizeName(name);
   }
 
-  async getTeamInfo(row: cheerio.Element): Promise<TeamInfo> {
+  async getTeamInfo(row: cheerio.Element, options: TeamInfoRequestOptions = { region: false, coordinates: false } ): Promise<TeamInfo> {
     const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
-    return Utils.getTeamInfo(teamUrl,{region: false, coordinates: false});
+    return Utils.getTeamInfo(teamUrl, options);
   }
 }

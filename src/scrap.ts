@@ -67,7 +67,7 @@ export class Scrap {
     console.log(`Fetching participants from group: ${groupId}`);
     const html = await Utils.getHtml(Utils.getCompetitionUrl(groupId, section));
     const league = new League(html);
-    const teams: LeagueTeam[] = await league.getTeams();
+    const teams: LeagueTeam[] = await league.getTeams({ region: true, coordinates: true });
     console.log(`Found ${teams.length} teams in group ${groupId}`);
     return map(teams, (team => {
       return {

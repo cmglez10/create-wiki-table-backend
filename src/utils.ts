@@ -25,6 +25,11 @@ export interface Team {
   coordinates?: Array<string>;
 }
 
+export interface TeamInfoRequestOptions {
+  region?: boolean;
+  coordinates?: boolean;
+}
+
 const translateFlag: Record<string, string> = {
   "Comunitat Valenciana": "Comunidad Valenciana",
   "Illes Balears": "Islas Baleares",
@@ -125,7 +130,7 @@ export class Utils {
     return translateFlag[flag] ?? flag;
   }
 
-  static async getTeamInfo(teamUrl: string, options: {region: boolean, coordinates: boolean} = {region: true, coordinates: true}): Promise<TeamInfo> {
+  static async getTeamInfo(teamUrl: string, options: TeamInfoRequestOptions = { region: true, coordinates: true }): Promise<TeamInfo> {
     const url = `${FUTBOL_REGIONAL_BASE_URL}${teamUrl}`
     
     try {
