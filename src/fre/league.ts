@@ -1,22 +1,6 @@
 import Cheerio from "cheerio";
-import { TeamInfo, TeamInfoRequestOptions, Utils } from "./utils";
-
-export interface LeagueTeam {
-  teamInfo: TeamInfo;
-  position: number;
-  name: string;
-  originalName: string;
-  shield: string;
-  points: number;
-  played: number;
-  won: number;
-  drawn: number;
-  lost: number;
-  gf: number;
-  ga: number;
-  gd: number;
-  sanction: number;
-}
+import { LeagueTeam, TeamInfo } from "../interfaces/team.interface";
+import { FreUtils, TeamInfoRequestOptions } from "./utils";
 
 export class League {
   $: cheerio.Root;
@@ -25,7 +9,9 @@ export class League {
     this.$ = Cheerio.load(html);
   }
 
-  async getTeams(options: TeamInfoRequestOptions = { region: false, coordinates: false } ): Promise<LeagueTeam[]> {
+  async getTeams(
+    options: TeamInfoRequestOptions = { region: false, coordinates: false }
+  ): Promise<LeagueTeam[]> {
     const teams: LeagueTeam[] = [];
     const rows: cheerio.Cheerio = this.$("#clasificacion1 .tablagen .fila");
 
@@ -59,7 +45,7 @@ export class League {
 
   getShieldUrl(row: cheerio.Element): string {
     return (
-      Utils.getBaseUrl() +
+      FreUtils.getBaseUrl() +
       this.$(this.$(row).find("#popupimagen img")).attr("src")
     );
   }
@@ -71,11 +57,14 @@ export class League {
   getName(row: cheerio.Element): string {
     const name = this.getColumn(row, 3);
 
-    return Utils.normalizeName(name);
+    return FreUtils.normalizeName(name);
   }
 
-  async getTeamInfo(row: cheerio.Element, options: TeamInfoRequestOptions = { region: false, coordinates: false } ): Promise<TeamInfo> {
+  async getTeamInfo(
+    row: cheerio.Element,
+    options: TeamInfoRequestOptions = { region: false, coordinates: false }
+  ): Promise<TeamInfo> {
     const teamUrl = this.$(this.$(row).children()[3]).find("a").attr("href");
-    return Utils.getTeamInfo(teamUrl, options);
+    return FreUtils.getTeamInfo(teamUrl, options);
   }
 }

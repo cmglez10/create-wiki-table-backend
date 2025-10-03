@@ -1,17 +1,12 @@
 import axios from "axios";
 import Cheerio from "cheerio";
 import { find, join, last, replace, split, toInteger, trim } from "lodash";
-import { COMPETITION_URL, FUTBOL_REGIONAL_BASE_URL } from "./constants/url-constants";
+import {
+  COMPETITION_URL,
+  FUTBOL_REGIONAL_BASE_URL,
+} from "../constants/url-constants";
+import { TeamInfo } from "../interfaces/team.interface";
 import { RecordResult } from "./results";
-
-export interface TeamInfo {
-  completeName: string;
-  region: string;
-  town: string;
-  foundationYear: string;
-  ground: string;
-  coordinates?: Array<string>;
-}
 
 export interface Team {
   originalName: string;
@@ -44,7 +39,7 @@ const transformTeamName: Record<string, string> = {
   "Valencia-Mestalla": "Valencia Club de Fútbol Mestalla",
 };
 
-export class Utils {
+export class FreUtils {
   static addQuotes(teamName: string): string {
     const bits = split(teamName, " ");
     if (last(bits).length === 1) {
@@ -58,7 +53,7 @@ export class Utils {
   }
 
   static getCompleteName(team$: cheerio.Root): string {
-    const cName = Utils.addQuotes(
+    const cName = FreUtils.addQuotes(
       split(team$("#derecha_sup_equ").text(), " :: ")[1]
     );
     if (transformTeamName[cName]) {
@@ -68,7 +63,9 @@ export class Utils {
   }
 
   static getTown(team$: cheerio.Root): string {
-    const addressElement =  team$(this.getTeamInfoData(team$, "Domicilio social:"))
+    const addressElement = team$(
+      this.getTeamInfoData(team$, "Domicilio social:")
+    );
     return team$(addressElement).children().first().text().trim();
   }
 
@@ -78,12 +75,14 @@ export class Utils {
   }
 
   static getTeamGroundName(team$: cheerio.Root): string {
-    const groundElement = team$(this.getTeamInfoData(team$, "Terrenos de juego:"));
+    const groundElement = team$(
+      this.getTeamInfoData(team$, "Terrenos de juego:")
+    );
     return team$(groundElement).find("a").first().text().trim();
   }
 
   static normalizeName(name: string): string {
-    return Utils.addQuotes(
+    return FreUtils.addQuotes(
       replace(trim(replace(name, new RegExp("\\.", "g"), ". ")), "  ", " ")
     );
   }
@@ -100,25 +99,23 @@ export class Utils {
         })
     );
 
-    return team$(
-      team$("#informacion").children()[elementOrder]
-    );
+    return team$(team$("#informacion").children()[elementOrder]);
   }
 
   static async getRegion(team$: cheerio.Root): Promise<string> {
-    const links = team$(this.getTeamInfoData(team$, "Domicilio social:")).children();
+    const links = team$(
+      this.getTeamInfoData(team$, "Domicilio social:")
+    ).children();
 
     let flag = "";
     if (links.length === 2) {
-      flag = team$(links[0])
-        .text()
-        .trim();
+      flag = team$(links[0]).text().trim();
     } else {
-      const provinceUrl = team$(
-        team$(links[1])
-      ).attr("href");    
-    
-      const provinceHtml = await Utils.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${provinceUrl}`);
+      const provinceUrl = team$(team$(links[1])).attr("href");
+
+      const provinceHtml = await FreUtils.getHtml(
+        `${FUTBOL_REGIONAL_BASE_URL}${provinceUrl}`
+      );
       const province$ = Cheerio.load(provinceHtml);
       flag = split(
         split(province$("#derecha_sup_fic").text(), " :: ")[1],
@@ -130,24 +127,32 @@ export class Utils {
     return translateFlag[flag] ?? flag;
   }
 
-  static async getTeamInfo(teamUrl: string, options: TeamInfoRequestOptions = { region: true, coordinates: true }): Promise<TeamInfo> {
-    const url = `${FUTBOL_REGIONAL_BASE_URL}${teamUrl}`
-    
+  static async getTeamInfo(
+    teamUrl: string,
+    options: TeamInfoRequestOptions = { region: true, coordinates: true }
+  ): Promise<TeamInfo> {
+    const url = `${FUTBOL_REGIONAL_BASE_URL}${teamUrl}`;
+
     try {
-      const data = await Utils.getHtml(url);
+      const data = await FreUtils.getHtml(url);
 
       const team$ = Cheerio.load(await data);
 
       const teamInfo: TeamInfo = {
-        completeName: Utils.getCompleteName(team$),
-        region: options.region ?  await Utils.getRegion(team$): "",
-        town: Utils.getTown(team$),
-        foundationYear: Utils.getTeamFoundationYear(team$),
-        ground: Utils.getTeamGroundName(team$),
-        coordinates: options.coordinates ? await Utils.getCoordinates(team$) : null,
+        completeName: FreUtils.getCompleteName(team$),
+        region: options.region ? await FreUtils.getRegion(team$) : "",
+        town: FreUtils.getTown(team$),
+        foundationYear: FreUtils.getTeamFoundationYear(team$),
+        ground: FreUtils.getTeamGroundName(team$),
+        coordinates: options.coordinates
+          ? await FreUtils.getCoordinates(team$)
+          : null,
       };
 
-      console.log(`Fetching team info from ${url}`, JSON.stringify(teamInfo, null, 2));
+      console.log(
+        `Fetching team info from ${url}`,
+        JSON.stringify(teamInfo, null, 2)
+      );
 
       return teamInfo;
     } catch (e) {
@@ -163,19 +168,25 @@ export class Utils {
   }
 
   static async getCoordinates(team$: cheerio.Root): Promise<Array<string>> {
-    const groundElement = team$(this.getTeamInfoData(team$, "Terrenos de juego:"));
+    const groundElement = team$(
+      this.getTeamInfoData(team$, "Terrenos de juego:")
+    );
     const groundUrl = team$(groundElement).find("a").first().attr("href");
     if (!groundUrl) {
       return null;
     }
-    const groundHtml = await Utils.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${groundUrl}`);
+    const groundHtml = await FreUtils.getHtml(
+      `${FUTBOL_REGIONAL_BASE_URL}${groundUrl}`
+    );
     const ground$ = Cheerio.load(groundHtml);
-    const gmapsUrl = ground$("#tdj_izq").find("#tdj_map").next().find("a").attr("href");
+    const gmapsUrl = ground$("#tdj_izq")
+      .find("#tdj_map")
+      .next()
+      .find("a")
+      .attr("href");
     const coordinates = split(split(gmapsUrl, "q=")[1], ",");
     return coordinates;
   }
-
-
 
   static async getHtml(url: string): Promise<string> {
     const html = await axios.get(url);
@@ -186,32 +197,75 @@ export class Utils {
     return `${FUTBOL_REGIONAL_BASE_URL}${COMPETITION_URL}?com=${competition}&sec=${section}`;
   }
 
-  static async getDateAndMatchdayFromCalendarTeam(record: RecordResult, calendarTeam$: cheerio.Root): Promise<{date: string, matchday: number}>{
+  static async getDateAndMatchdayFromCalendarTeam(
+    record: RecordResult,
+    calendarTeam$: cheerio.Root
+  ): Promise<{ date: string; matchday: number }> {
     const teamButtons = calendarTeam$("#calendario > a > div#tem-competicion");
-    
+
     const teamButton = find(teamButtons, (button) => {
-      return calendarTeam$(button).text().trim() === record.homeTeam.originalName;
+      return (
+        calendarTeam$(button).text().trim() === record.homeTeam.originalName
+      );
     });
 
-    const teamResultsUrl = split(calendarTeam$(teamButton).parent().attr("href"), "'")[1];
-    const teamResultsHtml = await this.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${teamResultsUrl}`);
+    const teamResultsUrl = split(
+      calendarTeam$(teamButton).parent().attr("href"),
+      "'"
+    )[1];
+    const teamResultsHtml = await this.getHtml(
+      `${FUTBOL_REGIONAL_BASE_URL}${teamResultsUrl}`
+    );
     const teamResults$ = Cheerio.load(teamResultsHtml);
     const rivalCells = teamResults$("table.clasificacion td > a").parent();
     const rivalCell = find(rivalCells, (cell) => {
       return teamResults$(cell).text().trim() === record.awayTeam.originalName;
     });
-    const firstResult = teamResults$(rivalCell).next().next().next().next().text().trim();
+    const firstResult = teamResults$(rivalCell)
+      .next()
+      .next()
+      .next()
+      .next()
+      .text()
+      .trim();
     const recordResult = `${record.result.home}-${record.result.away}`;
     if (firstResult === recordResult) {
       return {
-        date: split(teamResults$(rivalCell).next().next().text().trim(), ", ")[1],
-        matchday: toInteger(teamResults$(rivalCell).next().next().next().text().trim()),
-      }
+        date: split(
+          teamResults$(rivalCell).next().next().text().trim(),
+          ", "
+        )[1],
+        matchday: toInteger(
+          teamResults$(rivalCell).next().next().next().text().trim()
+        ),
+      };
     } else {
       return {
-        date: split(teamResults$(rivalCell).next().next().next().next().next().next().text().trim(), ", ")[1],
-        matchday: toInteger(teamResults$(rivalCell).next().next().next().next().next().next().next().text().trim()),
-      }
+        date: split(
+          teamResults$(rivalCell)
+            .next()
+            .next()
+            .next()
+            .next()
+            .next()
+            .next()
+            .text()
+            .trim(),
+          ", "
+        )[1],
+        matchday: toInteger(
+          teamResults$(rivalCell)
+            .next()
+            .next()
+            .next()
+            .next()
+            .next()
+            .next()
+            .next()
+            .text()
+            .trim()
+        ),
+      };
     }
   }
 }

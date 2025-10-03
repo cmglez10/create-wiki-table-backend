@@ -15,5 +15,14 @@ module.exports = {
   },
   rules: {
     "prettier/prettier": "warn",
+    "max-len": [
+      "error",
+      {
+        code: 120,
+        ignoreComments: true,
+        ignoreTrailingComments: true,
+        ignorePattern: "^import\\s.+\\sfrom\\s.+;$",
+      },
+    ],
   },
 };

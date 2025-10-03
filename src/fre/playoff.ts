@@ -1,6 +1,7 @@
 import Cheerio from "cheerio";
 import { last, split, toNumber, trim } from "lodash";
-import { TeamInfo, Utils } from "./utils";
+import { TeamInfo } from "../interfaces/team.interface";
+import { FreUtils } from "./utils";
 
 export interface PlayoffMatch {
   date: string;
@@ -27,7 +28,7 @@ export interface PlayoffRound {
   playoffs: Playoff[];
 }
 
-export class Playoffs {
+export class FrePlayoffs {
   $: cheerio.Root;
   rounds: PlayoffRound[];
 
@@ -86,7 +87,7 @@ export class Playoffs {
     const local = row.find(".equ_loc_2");
     const visitor = row.find(".equ_vis_2");
 
-    if (local.attr("style").match(/text-decoration:underline/) ){
+    if (local.attr("style").match(/text-decoration:underline/)) {
       return playoff.matches[0].homeName === currentMatch.homeName ? 1 : 2;
     } else if (visitor.attr("style").match(/text-decoration:underline/)) {
       return playoff.matches[0].awayName === currentMatch.awayName ? 2 : 1;
@@ -116,10 +117,10 @@ export class Playoffs {
 
     return {
       date: trim(this.$(row).find(".fecha").text()),
-      homeName: Utils.normalizeName(
+      homeName: FreUtils.normalizeName(
         trim(this.$(row).find(".equ_loc_2 a").text())
       ),
-      awayName: Utils.normalizeName(
+      awayName: FreUtils.normalizeName(
         trim(this.$(row).find(".equ_vis_2 a").text())
       ),
       homeCompleteName: homeTeamInfo.completeName,
@@ -138,7 +139,7 @@ export class Playoffs {
     const teamUrl = teamLink.attr("href");
 
     if (!this.teamsInfo[teamUrl]) {
-      this.teamsInfo[teamUrl] = await Utils.getTeamInfo(teamUrl);
+      this.teamsInfo[teamUrl] = await FreUtils.getTeamInfo(teamUrl);
     }
 
     return this.teamsInfo[teamUrl];
