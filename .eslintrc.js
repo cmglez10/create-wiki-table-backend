@@ -1,27 +1,26 @@
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+
 module.exports = {
   env: {
     browser: true,
     es2021: true,
   },
-  extends: [
-    "standard-with-typescript",
-    "eslint:recommended",
-    "plugin:prettier/recommended",
-  ],
+  extends: [eslint.configs.recommended, tseslint.configs.recommended, 'plugin:prettier/recommended'],
   overrides: [],
   parserOptions: {
-    ecmaVersion: "latest",
-    sourceType: "module",
+    ecmaVersion: 'latest',
+    sourceType: 'module',
   },
   rules: {
-    "prettier/prettier": "warn",
-    "max-len": [
-      "error",
+    'prettier/prettier': 'warn',
+    'max-len': [
+      'error',
       {
         code: 120,
         ignoreComments: true,
         ignoreTrailingComments: true,
-        ignorePattern: "^import\\s.+\\sfrom\\s.+;$",
+        ignorePattern: '^import\\s.+\\sfrom\\s.+;$',
       },
     ],
   },
