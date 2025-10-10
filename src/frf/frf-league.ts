@@ -15,111 +15,143 @@ export class FrfLeague {
 
     await page.waitForSelector('#CL_Resumen', { state: 'attached' });
 
-    const teams: LeagueTeam[] = await page.$$eval('#CL_Resumen table tbody tr', (rows: HTMLTableRowElement[]) => {
-      return rows.map((row) => {
-        function getChildValue(element: HTMLElement, deep: number): string {
-          console.log('getChildValue - deep', deep);
+    const a = 1;
 
-          let composedText = '';
+    const teams: LeagueTeam[] = await page.$$eval(
+      '#CL_Resumen table:first-child thead:nth-of-type(2) tr, #CL_Resumen table:first-child tbody tr',
+      (rows: HTMLTableRowElement[]) => {
+        const header = rows[0];
 
-          if (element.checkVisibility()) {
-            if (
-              element.nodeName !== 'STYLE' &&
-              element.nodeName !== 'SCRIPT' &&
-              element.nodeType !== Node.COMMENT_NODE
-            ) {
-              composedText += element.innerText?.trim();
-            }
+        const columns = {
+          position: 1,
+          shield: 2,
+          name: 3,
+          points: 4,
+          played: 5,
+          won: 6,
+          drawn: 7,
+          lost: 8,
+          gf: 9,
+          ga: 10,
+          sanction: 12,
+        };
 
-            console.log('getChildValue - node type', element.nodeName, element.nodeType);
-            console.log('getChildValue - inner text', element.innerText?.trim());
+        for (let i = 0; i < header!.cells.length; i++) {
+          if (header!.cells[i].innerText.includes('Pts')) {
+            columns.points = i + 3;
+          } else if (header!.cells[i].innerText === 'J') {
+            columns.played = i + 3;
+          } else if (header!.cells[i].innerText === 'G') {
+            columns.won = i + 3;
+          } else if (header!.cells[i].innerText === 'E.') {
+            columns.drawn = i + 3;
+          } else if (header!.cells[i].innerText === 'P') {
+            columns.lost = i + 3;
+          } else if (header!.cells[i].innerText === 'GF') {
+            columns.gf = i + 3;
+          } else if (header!.cells[i].innerText === 'GC') {
+            columns.ga = i + 3;
+          } else if (header!.cells[i].innerText === 'Puntos') {
+            columns.sanction = i + 3;
+          }
+        }
 
-            const before = window.getComputedStyle(element, '::before');
-            if (
-              before &&
-              before.content &&
-              before.content !== 'none' &&
-              before.content !== 'normal' &&
-              before.display !== 'none'
-            ) {
-              console.log('getChildValue - before content', before.content);
-              composedText += before.content.replace('"', '').replace('"', '');
-            } else {
-              console.log('getChildValue - no before content', before);
-            }
+        console.log('Number of rows:', rows.length);
 
-            const after = window.getComputedStyle(element, '::after');
-            if (
-              after &&
-              after.content &&
-              after.content !== 'none' &&
-              after.content !== 'normal' &&
-              after.display !== 'none'
-            ) {
-              console.log('getChildValue - after content', after.content);
-              composedText += after.content.replace('"', '').replace('"', '');
-            } else {
-              console.log('getChildValue - no after content', after);
-            }
+        return rows.map((row, index) => {
+          if (row.parentNode?.nodeName === 'THEAD') {
+            return null;
+          }
 
-            if (element.hasChildNodes()) {
-              let children = element.children;
-              console.log('getChildValue - has child nodes', children.length);
-              for (let i = 0; i < children.length; i++) {
-                let child = children[i] as HTMLElement;
-                const childText = getChildValue(child, deep + 1);
-                if (childText && childText.length > 0 && composedText !== childText) {
-                  composedText += childText;
+          function getChildValue(element: HTMLElement, deep: number): string {
+            let composedText = '';
+
+            if (element.checkVisibility()) {
+              if (
+                element.nodeName !== 'STYLE' &&
+                element.nodeName !== 'SCRIPT' &&
+                element.nodeType !== Node.COMMENT_NODE
+              ) {
+                composedText += element.innerText?.trim();
+              }
+
+              const before = window.getComputedStyle(element, '::before');
+              if (
+                before &&
+                before.content &&
+                before.content !== 'none' &&
+                before.content !== 'normal' &&
+                before.display !== 'none'
+              ) {
+                composedText += before.content.replace('"', '').replace('"', '');
+              } else {
+              }
+
+              const after = window.getComputedStyle(element, '::after');
+              if (
+                after &&
+                after.content &&
+                after.content !== 'none' &&
+                after.content !== 'normal' &&
+                after.display !== 'none'
+              ) {
+                composedText += after.content.replace('"', '').replace('"', '');
+              }
+
+              if (element.hasChildNodes()) {
+                let children = element.children;
+                for (let i = 0; i < children.length; i++) {
+                  let child = children[i] as HTMLElement;
+                  const childText = getChildValue(child, deep + 1);
+                  if (childText && childText.length > 0 && composedText !== childText) {
+                    composedText += childText;
+                  }
                 }
               }
             }
-          } else {
-            console.log('getChildValue - element is NOT visible', element.nodeName, element.nodeType);
+
+            return composedText;
           }
 
-          console.log('getChildValue - composed text', composedText);
+          function _getColumnValue(row: HTMLTableRowElement, index: number): string {
+            let cell = row.cells[index];
 
-          return composedText;
-        }
+            return getChildValue(cell, 0);
+          }
 
-        function _getColumnValue(row: HTMLTableRowElement, index: number): string {
-          let cell = row.cells[index];
+          if (row.cells.length < 11) {
+            return null;
+          }
 
-          console.log('_getColumnValue - column index', index);
+          const name = _getColumnValue(row, columns.name) ?? '';
+          const gf = Number(_getColumnValue(row, columns.gf) ?? 0);
+          const ga = Number(_getColumnValue(row, columns.ga) ?? 0);
 
-          return getChildValue(cell, 0);
-        }
-
-        if (row.cells.length < 11) {
-          return null;
-        }
-
-        const name = _getColumnValue(row, 3) ?? '';
-
-        return {
-          teamInfo: {
-            completeName: name,
-            region: '',
-            town: '',
-            foundationYear: '',
-            ground: '',
-          },
-          position: Number(_getColumnValue(row, 1) ?? 0),
-          name: name,
-          originalName: name,
-          shield: row.cells[2]?.querySelector('img')?.src ?? '',
-          points: Number(_getColumnValue(row, 4) ?? 0),
-          played: Number(_getColumnValue(row, 5) ?? 0),
-          won: Number(_getColumnValue(row, 6) ?? 0),
-          drawn: Number(_getColumnValue(row, 7) ?? 0),
-          lost: Number(_getColumnValue(row, 8) ?? 0),
-          gf: Number(_getColumnValue(row, 9) ?? 0),
-          ga: Number(_getColumnValue(row, 10) ?? 0),
-          gd: Number(_getColumnValue(row, 9) ?? 0) - Number(_getColumnValue(row, 10) ?? 0),
-          sanction: Number(_getColumnValue(row, 12) ?? 0),
-        };
-      });
-    });
+          return {
+            teamInfo: {
+              completeName: name,
+              region: '',
+              town: '',
+              foundationYear: '',
+              ground: '',
+            },
+            position: Number(_getColumnValue(row, columns.position) ?? 0),
+            name: name,
+            originalName: name,
+            shield: row.cells[2]?.querySelector('img')?.src ?? '',
+            points: Number(_getColumnValue(row, columns.points) ?? 0),
+            played: Number(_getColumnValue(row, columns.played) ?? 0),
+            won: Number(_getColumnValue(row, columns.won) ?? 0),
+            drawn: Number(_getColumnValue(row, columns.drawn) ?? 0),
+            lost: Number(_getColumnValue(row, columns.lost) ?? 0),
+            gf,
+            ga,
+            gd: gf - ga,
+            sanction: Number(_getColumnValue(row, columns.sanction) ?? 0),
+          };
+        });
+      }
+    );
 
     await browser.close();
 
