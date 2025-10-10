@@ -1,4 +1,4 @@
-import { compact } from 'lodash';
+import { capitalize, compact, map, split } from 'lodash';
 import { chromium } from 'playwright';
 import { LeagueTeam } from '../interfaces/team.interface';
 
@@ -123,6 +123,12 @@ export class FrfLeague {
 
     await browser.close();
 
-    return compact(teams);
+    return map(compact(teams), (team) => {
+      const capitalizedName = map(split(team.name, ' '), (portion) => capitalize(portion.toLowerCase())).join(' ');
+      team.name = capitalizedName;
+      team.originalName = team.name;
+      team.teamInfo.completeName = capitalizedName;
+      return team;
+    });
   }
 }
