@@ -23,9 +23,10 @@ router
     const res = await scrap.fetchLeague(leagueId, section);
     ctx.body = res;
   })
-  .get('/frf-league/:url', async (ctx: Koa.Context) => {
+  .post('/frf-league/', async (ctx: Koa.Context) => {
+    const body = ctx.request.body;
     ctx.request.socket.setTimeout(5 * 60 * 1000);
-    const res = await frfScrap.fetchLeague(ctx.params.url);
+    const res = await frfScrap.fetchLeague(body.url);
     ctx.body = res;
   })
   .get('/playoff/:playoffId/section/:section', async (ctx: Koa.Context) => {
