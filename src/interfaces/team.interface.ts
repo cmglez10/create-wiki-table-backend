@@ -23,3 +23,15 @@ export interface TeamInfo {
   ground: string;
   coordinates?: Array<string>;
 }
+
+export interface Team {
+  originalName: string;
+  completeName: string;
+  name: string;
+  region: string;
+  town: string;
+  foundationYear: string;
+  ground: string;
+  shield?: string;
+  coordinates?: Array<string>;
+}

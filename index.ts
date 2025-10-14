@@ -3,7 +3,8 @@ import cors from '@koa/cors';
 import Koa from 'koa';
 import Router from 'koa-router';
 import { FreScrap } from './src/fre/scrap';
-import { FrfScrap } from './src/frf/frf-scrap';
+import { FrfLeague } from './src/frf/frf-league';
+import { FrfResults } from './src/frf/frf-results';
 
 const app: Koa = new Koa();
 app.use(cors());
@@ -11,7 +12,6 @@ app.use(cors());
 const router = new Router();
 app.use(bodyParser());
 const scrap = new FreScrap();
-const frfScrap = new FrfScrap();
 
 router
   .get('/health', async (ctx: Koa.Context) => {
@@ -26,7 +26,8 @@ router
   .post('/frf-league/', async (ctx: Koa.Context) => {
     const body = ctx.request.body;
     ctx.request.socket.setTimeout(5 * 60 * 1000);
-    const res = await frfScrap.fetchLeague(body.url);
+    const league = new FrfLeague();
+    const res = await league.scrape(body.url);
     ctx.body = res;
   })
   .get('/playoff/:playoffId/section/:section', async (ctx: Koa.Context) => {
@@ -36,6 +37,17 @@ router
     ctx.body = res;
   })
   .get('/results/:groupId/section/:section', async (ctx: Koa.Context) => {
+    const res = await scrap.fetchResults(ctx.params.groupId, ctx.params.section);
+    ctx.body = res;
+  })
+  .post('/frf-results/', async (ctx: Koa.Context) => {
+    const body = ctx.request.body;
+    ctx.request.socket.setTimeout(5 * 60 * 1000);
+    const results = new FrfResults();
+    const res = await results.fetchResults(body.url);
+    ctx.body = res;
+  })
+  .get('/results/groupId/:groupId/section/:section', async (ctx: Koa.Context) => {
     const res = await scrap.fetchResults(ctx.params.groupId, ctx.params.section);
     ctx.body = res;
   })

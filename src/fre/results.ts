@@ -1,33 +1,8 @@
-import Cheerio from "cheerio";
-import { includes, split, toInteger, trim } from "lodash";
-import { FreUtils, Team } from "./utils";
-
-export interface Result {
-  home: number;
-  away: number;
-}
-
-export interface RecordResult {
-  homeTeam: Team;
-  awayTeam: Team;
-  result: Result;
-  goals: number;
-  date: string;
-  matchday: number;
-  groupId: number;
-}
-
-export interface Records {
-  biggestHomeWin: Array<RecordResult>;
-  biggestAwayWin: Array<RecordResult>;
-  moreGoalsMatch: Array<RecordResult>;
-}
-
-export interface ResultsData {
-  teams: Array<Team>;
-  results: Array<Array<Result>>;
-  records: Records;
-}
+import Cheerio from 'cheerio';
+import { includes, split, toInteger, trim } from 'lodash';
+import { RecordResult, Records, Result, ResultsData } from '../interfaces/results.interface';
+import { Team } from '../interfaces/team.interface';
+import { FreUtils } from './utils';
 
 export class FreResults {
   crossTable$: cheerio.Root;
@@ -44,7 +19,7 @@ export class FreResults {
   }
 
   async getResults(): Promise<ResultsData> {
-    const rows: cheerio.Cheerio = this.crossTable$("#calendario > div > div");
+    const rows: cheerio.Cheerio = this.crossTable$('#calendario > div > div');
 
     const teams = await this.getTeams(rows);
     const results = await this.getResultsArray(rows);
@@ -62,11 +37,9 @@ export class FreResults {
 
     for (let i = 2; i < rows.length; i++) {
       const row = rows.get(i);
-      const columns = this.crossTable$(row).find("div");
+      const columns = this.crossTable$(row).find('div');
 
-      results.push(
-        await this.getTeamInfo(this.crossTable$(columns).first().find("a"))
-      );
+      results.push(await this.getTeamInfo(this.crossTable$(columns).first().find('a')));
     }
 
     return results;
@@ -74,7 +47,7 @@ export class FreResults {
 
   async getTeamInfo(teamLink: cheerio.Cheerio): Promise<Team> {
     const teamName = teamLink.text().trim();
-    const teamUrl = teamLink.attr("href");
+    const teamUrl = teamLink.attr('href');
 
     return {
       ...(await FreUtils.getTeamInfo(teamUrl)),
@@ -89,7 +62,7 @@ export class FreResults {
     rows.each((i, row) => {
       if (i < 2) return;
 
-      const rowColumns = this.crossTable$(row).find("div");
+      const rowColumns = this.crossTable$(row).find('div');
 
       const rowResults: Array<Result> = [];
 
@@ -98,8 +71,8 @@ export class FreResults {
 
         const result = this.crossTable$(column).text();
 
-        if (result && includes(result, "-")) {
-          const [home, away] = split(result, "-");
+        if (result && includes(result, '-')) {
+          const [home, away] = split(result, '-');
           rowResults.push({
             home: toInteger(trim(home)),
             away: toInteger(trim(away)),
@@ -115,10 +88,7 @@ export class FreResults {
     return results;
   }
 
-  async getRecords(
-    results: Array<Array<Result>>,
-    teams: Array<Team>
-  ): Promise<Records> {
+  async getRecords(results: Array<Array<Result>>, teams: Array<Team>): Promise<Records> {
     let biggestHomeWin: Array<RecordResult> = [];
     let biggestAwayWin: Array<RecordResult> = [];
     let moreGoalsMatch: Array<RecordResult> = [];
@@ -130,10 +100,7 @@ export class FreResults {
         const goalDifference = result.home - result.away;
 
         if (goalDifference > 0) {
-          if (
-            biggestHomeWin.length === 0 ||
-            goalDifference > biggestHomeWin[0].goals
-          ) {
+          if (biggestHomeWin.length === 0 || goalDifference > biggestHomeWin[0].goals) {
             biggestHomeWin = [
               {
                 homeTeam: teams[i],
@@ -159,10 +126,7 @@ export class FreResults {
         }
 
         if (goalDifference < 0) {
-          if (
-            biggestAwayWin.length === 0 ||
-            Math.abs(goalDifference) > biggestAwayWin[0].goals
-          ) {
+          if (biggestAwayWin.length === 0 || Math.abs(goalDifference) > biggestAwayWin[0].goals) {
             biggestAwayWin = [
               {
                 homeTeam: teams[i],
@@ -188,10 +152,7 @@ export class FreResults {
         }
 
         if (result.home + result.away > 0) {
-          if (
-            moreGoalsMatch.length === 0 ||
-            result.home + result.away > moreGoalsMatch[0].goals
-          ) {
+          if (moreGoalsMatch.length === 0 || result.home + result.away > moreGoalsMatch[0].goals) {
             moreGoalsMatch = [
               {
                 homeTeam: teams[i],
@@ -226,15 +187,9 @@ export class FreResults {
   }
 
   private async _fillDateAndMatchday(records: Records): Promise<Records> {
-    for (let recordType of Object.values(records) as Array<
-      Array<RecordResult>
-    >) {
+    for (let recordType of Object.values(records) as Array<Array<RecordResult>>) {
       for (let record of recordType) {
-        const { date, matchday } =
-          await FreUtils.getDateAndMatchdayFromCalendarTeam(
-            record,
-            this.teamCalendarIndex$
-          );
+        const { date, matchday } = await FreUtils.getDateAndMatchdayFromCalendarTeam(record, this.teamCalendarIndex$);
         record.date = date;
         record.matchday = matchday;
       }

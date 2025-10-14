@@ -18,7 +18,7 @@ export class FrfLeague {
     const a = 1;
 
     const teams: LeagueTeam[] = await page.$$eval(
-      '#CL_Resumen table:first-child thead:nth-of-type(2) tr, #CL_Resumen table:first-child tbody tr',
+      '#CL_Resumen table:first-of-type thead:nth-of-type(2) tr, #CL_Resumen table:first-of-type tbody tr',
       (rows: HTMLTableRowElement[]) => {
         const header = rows[0];
 
@@ -47,9 +47,9 @@ export class FrfLeague {
             columns.drawn = i + 3;
           } else if (header!.cells[i].innerText === 'P') {
             columns.lost = i + 3;
-          } else if (header!.cells[i].innerText === 'GF') {
+          } else if (header!.cells[i].innerText === 'F') {
             columns.gf = i + 3;
-          } else if (header!.cells[i].innerText === 'GC') {
+          } else if (header!.cells[i].innerText === 'C') {
             columns.ga = i + 3;
           } else if (header!.cells[i].innerText === 'Puntos') {
             columns.sanction = i + 3;
@@ -58,7 +58,7 @@ export class FrfLeague {
 
         console.log('Number of rows:', rows.length);
 
-        return rows.map((row, index) => {
+        return rows.map((row) => {
           if (row.parentNode?.nodeName === 'THEAD') {
             return null;
           }

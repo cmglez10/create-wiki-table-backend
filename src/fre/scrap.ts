@@ -1,122 +1,70 @@
-import Cheerio from "cheerio";
-import { map, reduce, split } from "lodash";
-import { FUTBOL_REGIONAL_BASE_URL } from "../constants/url-constants";
-import { LeagueTeam, TeamInfo } from "../interfaces/team.interface";
-import { League } from "./league";
-import { FrePlayoffs, PlayoffRound } from "./playoff";
-import { FreResults, Records, ResultsData } from "./results";
-import { FreUtils, Team } from "./utils";
+import Cheerio from 'cheerio';
+import { map, reduce, split } from 'lodash';
+import { FUTBOL_REGIONAL_BASE_URL } from '../constants/url-constants';
+import { Records, ResultsData } from '../interfaces/results.interface';
+import { LeagueTeam, Team, TeamInfo } from '../interfaces/team.interface';
+import { League } from './league';
+import { FrePlayoffs, PlayoffRound } from './playoff';
+import { FreResults } from './results';
+import { FreUtils } from './utils';
 
 export class FreScrap {
-  async fetchLeague(
-    competition: string,
-    section: string
-  ): Promise<LeagueTeam[]> {
-    const html = await FreUtils.getHtml(
-      FreUtils.getCompetitionUrl(competition, section)
-    );
+  async fetchLeague(competition: string, section: string): Promise<LeagueTeam[]> {
+    const html = await FreUtils.getHtml(FreUtils.getCompetitionUrl(competition, section));
     const league = new League(html);
     return league.getTeams();
   }
 
-  async fetchPlayoff(
-    competition: string,
-    section: string
-  ): Promise<PlayoffRound[]> {
-    const html = await FreUtils.getHtml(
-      FreUtils.getCompetitionUrl(competition, section)
-    );
+  async fetchPlayoff(competition: string, section: string): Promise<PlayoffRound[]> {
+    const html = await FreUtils.getHtml(FreUtils.getCompetitionUrl(competition, section));
     const playoffs = new FrePlayoffs(html, section);
     return playoffs.getPlayoffs();
   }
 
-  async fetchResults(
-    competition: string,
-    section: string
-  ): Promise<ResultsData> {
-    const html = await FreUtils.getHtml(
-      FreUtils.getCompetitionUrl(competition, section)
-    );
+  async fetchResults(competition: string, section: string): Promise<ResultsData> {
+    const html = await FreUtils.getHtml(FreUtils.getCompetitionUrl(competition, section));
     const $ = Cheerio.load(html);
-    const hrefTable = $(
-      "#post-clasificacion #menu_index:nth-of-type(3) a"
-    ).attr("href");
+    const hrefTable = $('#post-clasificacion #menu_index:nth-of-type(3) a').attr('href');
     const crossTableResultsUrl = split(hrefTable, "'")[1];
-    const crossTableHtml = await FreUtils.getHtml(
-      `${FUTBOL_REGIONAL_BASE_URL}${crossTableResultsUrl}`
-    );
-    const hrefTeamCalendar = $(
-      "#post-clasificacion #menu_index:nth-of-type(2) a"
-    ).attr("href");
+    const crossTableHtml = await FreUtils.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${crossTableResultsUrl}`);
+    const hrefTeamCalendar = $('#post-clasificacion #menu_index:nth-of-type(2) a').attr('href');
     const teamCalendarUrl = split(hrefTeamCalendar, "'")[1];
-    const teamCalendarHtml = await FreUtils.getHtml(
-      `${FUTBOL_REGIONAL_BASE_URL}${teamCalendarUrl}`
-    );
+    const teamCalendarHtml = await FreUtils.getHtml(`${FUTBOL_REGIONAL_BASE_URL}${teamCalendarUrl}`);
 
-    const results = new FreResults(
-      crossTableHtml,
-      teamCalendarHtml,
-      section,
-      parseInt(competition)
-    );
+    const results = new FreResults(crossTableHtml, teamCalendarHtml, section, parseInt(competition));
     return results.getResults();
   }
 
-  async fetchRecordsFromManyGroups(
-    groupIds: string[],
-    section: string
-  ): Promise<Records> {
+  async fetchRecordsFromManyGroups(groupIds: string[], section: string): Promise<Records> {
     return await reduce(
       groupIds,
       async (acc: Promise<Records>, groupId: string) => {
-        const currentRecords = (await this.fetchResults(groupId, section))
-          .records;
+        const currentRecords = (await this.fetchResults(groupId, section)).records;
         const accResult = await acc;
 
         if (
           !accResult.biggestHomeWin.length ||
-          currentRecords.biggestHomeWin[0].goals >
-            accResult.biggestHomeWin[0].goals
+          currentRecords.biggestHomeWin[0].goals > accResult.biggestHomeWin[0].goals
         ) {
           accResult.biggestHomeWin = currentRecords.biggestHomeWin;
-        } else if (
-          currentRecords.biggestHomeWin[0].goals ===
-          accResult.biggestHomeWin[0].goals
-        ) {
-          accResult.biggestHomeWin = [
-            ...accResult.biggestHomeWin,
-            ...currentRecords.biggestHomeWin,
-          ];
+        } else if (currentRecords.biggestHomeWin[0].goals === accResult.biggestHomeWin[0].goals) {
+          accResult.biggestHomeWin = [...accResult.biggestHomeWin, ...currentRecords.biggestHomeWin];
         }
         if (
           !accResult.biggestAwayWin.length ||
-          currentRecords.biggestAwayWin[0].goals >
-            accResult.biggestAwayWin[0].goals
+          currentRecords.biggestAwayWin[0].goals > accResult.biggestAwayWin[0].goals
         ) {
           accResult.biggestAwayWin = currentRecords.biggestAwayWin;
-        } else if (
-          currentRecords.biggestAwayWin[0].goals ===
-          accResult.biggestAwayWin[0].goals
-        ) {
-          accResult.biggestAwayWin = [
-            ...accResult.biggestAwayWin,
-            ...currentRecords.biggestAwayWin,
-          ];
+        } else if (currentRecords.biggestAwayWin[0].goals === accResult.biggestAwayWin[0].goals) {
+          accResult.biggestAwayWin = [...accResult.biggestAwayWin, ...currentRecords.biggestAwayWin];
         }
         if (
           !accResult.moreGoalsMatch.length ||
-          currentRecords.moreGoalsMatch[0].goals >
-            accResult.moreGoalsMatch[0].goals
+          currentRecords.moreGoalsMatch[0].goals > accResult.moreGoalsMatch[0].goals
         ) {
           accResult.moreGoalsMatch = currentRecords.moreGoalsMatch;
-        } else if (
-          currentRecords.moreGoalsMatch[0].goals ===
-          accResult.moreGoalsMatch[0].goals
-        ) {
-          accResult.moreGoalsMatch = [
-            ...accResult.moreGoalsMatch,
-            ...currentRecords.moreGoalsMatch,
-          ];
+        } else if (currentRecords.moreGoalsMatch[0].goals === accResult.moreGoalsMatch[0].goals) {
+          accResult.moreGoalsMatch = [...accResult.moreGoalsMatch, ...currentRecords.moreGoalsMatch];
         }
         return accResult;
       },
@@ -128,14 +76,9 @@ export class FreScrap {
     );
   }
 
-  async fetchParticipantsFromGroup(
-    groupId: string,
-    section: string
-  ): Promise<Team[]> {
+  async fetchParticipantsFromGroup(groupId: string, section: string): Promise<Team[]> {
     console.log(`Fetching participants from group: ${groupId}`);
-    const html = await FreUtils.getHtml(
-      FreUtils.getCompetitionUrl(groupId, section)
-    );
+    const html = await FreUtils.getHtml(FreUtils.getCompetitionUrl(groupId, section));
     const league = new League(html);
     const teams: LeagueTeam[] = await league.getTeams({
       region: true,
@@ -157,18 +100,12 @@ export class FreScrap {
     });
   }
 
-  async fetchParticipantsFromManyGroups(
-    groupIds: string[],
-    section: string
-  ): Promise<TeamInfo[]> {
-    console.log(`Fetching participants from groups: ${groupIds.join(", ")}`);
+  async fetchParticipantsFromManyGroups(groupIds: string[], section: string): Promise<TeamInfo[]> {
+    console.log(`Fetching participants from groups: ${groupIds.join(', ')}`);
     return await reduce(
       groupIds,
       async (acc: Promise<TeamInfo[]>, groupId: string) => {
-        const currentParticipants = await this.fetchParticipantsFromGroup(
-          groupId,
-          section
-        );
+        const currentParticipants = await this.fetchParticipantsFromGroup(groupId, section);
         const accResult = await acc;
         return [...accResult, ...currentParticipants];
       },
