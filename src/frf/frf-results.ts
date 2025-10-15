@@ -1,3 +1,4 @@
+import { capitalize, map, split } from 'lodash';
 import { chromium } from 'playwright-core';
 import { Records, Result, ResultsData } from '../interfaces/results.interface';
 import { Team } from '../interfaces/team.interface';
@@ -33,9 +34,9 @@ export class FrfResults {
 
           const teamResults: Array<Result> = [];
 
-          for (let cellIndex = 2; cellIndex < row.cells.length; cellIndex++) {
+          for (let cellIndex = 1; cellIndex < row.cells.length; cellIndex++) {
             const cell = row.cells[cellIndex];
-            if (cell.innerText.startsWith('J')) {
+            if (!cell.innerText.includes(' - ')) {
               teamResults.push(null);
             } else {
               const [home, away] = cell.innerText.split(' - ').map((score: string) => parseInt(score.trim(), 10));
@@ -50,15 +51,26 @@ export class FrfResults {
         return {
           teams: teamNames
             .filter((name) => name !== null)
-            .map((name) => ({
-              originalName: name,
-              name,
-            })) as Array<Team>,
+            .map((name) => {
+              return {
+                originalName: name,
+                name,
+              };
+            }) as Array<Team>,
           results,
           records: null as Records,
         };
       }
     );
+
+    results.teams = map(results.teams, (team) => {
+      const capitalizedName = map(split(team.name, ' '), (portion) => capitalize(portion.toLowerCase())).join(' ');
+      return {
+        originalName: capitalizedName,
+        name: capitalizedName,
+        completeName: capitalizedName,
+      };
+    }) as Array<Team>;
 
     return results;
   }
