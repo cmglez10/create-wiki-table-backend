@@ -57,6 +57,13 @@ router
     const res = await scrap.fetchRecordsFromManyGroups(body.groupIds, section);
     ctx.body = res;
   })
+  .post('/frf-records', async (ctx: Koa.Context) => {
+    const body = ctx.request.body;
+    const url: string = body.url;
+    const results = new FrfResults();
+    const res = await results.fetchResults(url);
+    ctx.body = res.records;
+  })
   .post('/participants/section/:section', async (ctx: Koa.Context) => {
     const body = ctx.request.body;
     const section: string = ctx.params.section;

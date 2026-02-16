@@ -2,6 +2,7 @@ import { capitalize, map, split } from 'lodash';
 import { chromium } from 'playwright-core';
 import { Records, Result, ResultsData } from '../interfaces/results.interface';
 import { Team } from '../interfaces/team.interface';
+import { Utils } from '../utils/utils';
 
 export class FrfResults {
   async fetchResults(url: string): Promise<ResultsData> {
@@ -71,6 +72,8 @@ export class FrfResults {
         completeName: capitalizedName,
       };
     }) as Array<Team>;
+
+    results.records = await Utils.getRecords(results.results, results.teams, 0);
 
     return results;
   }
