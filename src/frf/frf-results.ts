@@ -1,4 +1,4 @@
-import { capitalize, map, split } from 'lodash';
+import { capitalize, map, reduce, split } from 'lodash';
 import { chromium } from 'playwright-core';
 import { Records, Result, ResultsData } from '../interfaces/results.interface';
 import { Team } from '../interfaces/team.interface';
@@ -73,8 +73,67 @@ export class FrfResults {
       };
     }) as Array<Team>;
 
-    results.records = await Utils.getRecords(results.results, results.teams, 0);
+    results.records = await Utils.getRecords(results.results, results.teams, url);
 
     return results;
+  }
+
+  async fetchRecordsFromManyUrls(urls: string[]): Promise<Records> {
+    return await reduce(
+      urls,
+      async (acc: Promise<Records>, url: string) => {
+        const currentRecords = (await this.fetchResults(url)).records;
+        const accResult = await acc;
+
+        if (
+          currentRecords.biggestHomeWin.length &&
+          (!accResult.biggestHomeWin.length ||
+            currentRecords.biggestHomeWin[0].goals > accResult.biggestHomeWin[0].goals)
+        ) {
+          accResult.biggestHomeWin = currentRecords.biggestHomeWin;
+        } else if (
+          currentRecords.biggestHomeWin.length &&
+          accResult.biggestHomeWin.length &&
+          currentRecords.biggestHomeWin[0].goals === accResult.biggestHomeWin[0].goals
+        ) {
+          accResult.biggestHomeWin = [...accResult.biggestHomeWin, ...currentRecords.biggestHomeWin];
+        }
+
+        if (
+          currentRecords.biggestAwayWin.length &&
+          (!accResult.biggestAwayWin.length ||
+            currentRecords.biggestAwayWin[0].goals > accResult.biggestAwayWin[0].goals)
+        ) {
+          accResult.biggestAwayWin = currentRecords.biggestAwayWin;
+        } else if (
+          currentRecords.biggestAwayWin.length &&
+          accResult.biggestAwayWin.length &&
+          currentRecords.biggestAwayWin[0].goals === accResult.biggestAwayWin[0].goals
+        ) {
+          accResult.biggestAwayWin = [...accResult.biggestAwayWin, ...currentRecords.biggestAwayWin];
+        }
+
+        if (
+          currentRecords.moreGoalsMatch.length &&
+          (!accResult.moreGoalsMatch.length ||
+            currentRecords.moreGoalsMatch[0].goals > accResult.moreGoalsMatch[0].goals)
+        ) {
+          accResult.moreGoalsMatch = currentRecords.moreGoalsMatch;
+        } else if (
+          currentRecords.moreGoalsMatch.length &&
+          accResult.moreGoalsMatch.length &&
+          currentRecords.moreGoalsMatch[0].goals === accResult.moreGoalsMatch[0].goals
+        ) {
+          accResult.moreGoalsMatch = [...accResult.moreGoalsMatch, ...currentRecords.moreGoalsMatch];
+        }
+
+        return accResult;
+      },
+      Promise.resolve({
+        biggestHomeWin: [],
+        biggestAwayWin: [],
+        moreGoalsMatch: [],
+      })
+    );
   }
 }

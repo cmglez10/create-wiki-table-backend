@@ -59,10 +59,11 @@ router
   })
   .post('/frf-records', async (ctx: Koa.Context) => {
     const body = ctx.request.body;
-    const url: string = body.url;
+    const urls: string[] = body.urls;
     const results = new FrfResults();
-    const res = await results.fetchResults(url);
-    ctx.body = res.records;
+    ctx.request.socket.setTimeout(5 * 60 * 1000);
+    const res = await results.fetchRecordsFromManyUrls(urls);
+    ctx.body = res;
   })
   .post('/participants/section/:section', async (ctx: Koa.Context) => {
     const body = ctx.request.body;

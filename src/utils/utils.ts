@@ -2,7 +2,11 @@ import { RecordResult, Records, Result } from '../interfaces/results.interface';
 import { Team } from '../interfaces/team.interface';
 
 export class Utils {
-  static async getRecords(results: Array<Array<Result>>, teams: Array<Team>, groupId: number): Promise<Records> {
+  static async getRecords(
+    results: Array<Array<Result>>,
+    teams: Array<Team>,
+    groupId: number | string
+  ): Promise<Records> {
     let biggestHomeWin: Array<RecordResult> = [];
     let biggestAwayWin: Array<RecordResult> = [];
     let moreGoalsMatch: Array<RecordResult> = [];
