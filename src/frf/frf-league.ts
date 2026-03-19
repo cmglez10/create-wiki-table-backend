@@ -56,15 +56,22 @@ export class FrfLeague {
           }
         }
 
-        console.log('Number of rows:', rows.length);
-
-        return rows.map((row) => {
+        return rows.map((row, rowIndex) => {
           if (row.parentNode?.nodeName === 'THEAD') {
             return null;
           }
 
-          function getChildValue(element: HTMLElement, deep: number): string {
+          function getChildValue(
+            element: HTMLElement,
+            deep = 0
+          ): {
+            innerText: string;
+            composedText: string;
+          } {
             let composedText = '';
+            let innerText = '';
+            let beforeText = '';
+            let afterText = '';
 
             if (element.checkVisibility()) {
               if (
@@ -72,7 +79,7 @@ export class FrfLeague {
                 element.nodeName !== 'SCRIPT' &&
                 element.nodeType !== Node.COMMENT_NODE
               ) {
-                composedText += element.innerText?.trim();
+                innerText = element.innerText.trim();
               }
 
               const before = window.getComputedStyle(element, '::before');
@@ -83,8 +90,7 @@ export class FrfLeague {
                 before.content !== 'normal' &&
                 before.display !== 'none'
               ) {
-                composedText += before.content.replace('"', '').replace('"', '');
-              } else {
+                beforeText = before.content.replace('"', '').replace('"', '');
               }
 
               const after = window.getComputedStyle(element, '::after');
@@ -95,28 +101,45 @@ export class FrfLeague {
                 after.content !== 'normal' &&
                 after.display !== 'none'
               ) {
-                composedText += after.content.replace('"', '').replace('"', '');
+                afterText = after.content.replace('"', '').replace('"', '');
               }
 
-              if (element.hasChildNodes()) {
-                let children = element.children;
+              let children = element.children;
+              if (children.length > 0) {
+                let childComposedTexts = '';
+                let childInnerTexts = '';
+
                 for (let i = 0; i < children.length; i++) {
                   let child = children[i] as HTMLElement;
-                  const childText = getChildValue(child, deep + 1);
-                  if (childText && childText.length > 0 && composedText !== childText) {
-                    composedText += childText;
+                  const childTexts = getChildValue(child, deep + 1);
+                  const childInnerText = childTexts.innerText.trim();
+
+                  if (childInnerText.length > 0 && innerText.includes(childInnerText)) {
+                    innerText = innerText.replace(childInnerText, '').trim();
                   }
+                  childComposedTexts += childTexts.composedText;
+                  childInnerTexts += childInnerText;
                 }
+
+                composedText = beforeText + innerText + childComposedTexts + afterText;
+                innerText = innerText + childInnerTexts;
+              } else {
+                composedText = beforeText + innerText + afterText;
               }
             }
 
-            return composedText;
+            return {
+              innerText,
+              composedText,
+            };
           }
 
-          function _getColumnValue(row: HTMLTableRowElement, index: number): string {
-            let cell = row.cells[index];
+          function _getColumnValue(row: HTMLTableRowElement, columnIndex: number): string {
+            let cell = row.cells[columnIndex];
 
-            return getChildValue(cell, 0);
+            const texts = getChildValue(cell);
+
+            return texts.composedText;
           }
 
           if (row.cells.length < 11) {
