@@ -93,6 +93,105 @@ export class FrfLeague {
         const texts = (window as any).getChildValue(row.cells[columnIndex], ignoreHidden);
         return texts.composedText;
       };
+
+      (window as any).getLanguage = function (
+        headerRow: HTMLTableRowElement
+      ): Partial<Record<keyof ColumnsMap, string>> {
+        const columnsToExtract: Record<string, Partial<Record<keyof ColumnsMap, string>>> = {
+          ESP: {
+            name: 'Ordenar por',
+            points: 'Pts',
+            played: 'J',
+            won: 'G',
+            drawn: 'E',
+            lost: 'P',
+            gf: 'F',
+            ga: 'C',
+            sanction: 'Puntos',
+          },
+          EUS: {
+            name: 'Sailkapena',
+            points: 'Ptak',
+            played: 'J',
+            won: 'I',
+            drawn: 'B',
+            lost: 'G',
+            gf: 'F',
+            ga: 'C',
+            sanction: 'Puntuak',
+          },
+        };
+
+        const firstCellText = headerRow.cells[0]?.innerText.trim();
+
+        if (firstCellText === 'Sailkapena') {
+          return columnsToExtract.EUS;
+        }
+
+        return columnsToExtract.ESP;
+      };
+
+      (window as any).getColumnsMap = function (headerRow: HTMLTableRowElement): ColumnsMap {
+        let column = 0;
+
+        const columns: ColumnsMap = {
+          position: 1,
+          shield: 2,
+        };
+
+        const columnsByLanguage = (window as any).getLanguage(headerRow);
+
+        for (let i = 0; i < headerRow!.cells.length; i++) {
+          if (headerRow!.cells[i].colSpan > 1) {
+            column += headerRow!.cells[i].colSpan - 1;
+          }
+
+          const cellText = headerRow!.cells[i].innerText.trim().replace('.', '');
+
+          switch (cellText) {
+            case columnsByLanguage.name: {
+              columns.name = column;
+              break;
+            }
+            case columnsByLanguage.points: {
+              columns.points = column;
+              break;
+            }
+            case columnsByLanguage.played: {
+              columns.played = column;
+              break;
+            }
+            case columnsByLanguage.won: {
+              columns.won = column;
+              break;
+            }
+            case columnsByLanguage.lost: {
+              columns.lost = column;
+              break;
+            }
+            case columnsByLanguage.gf: {
+              columns.gf = column;
+              break;
+            }
+            case columnsByLanguage.ga: {
+              columns.ga = column;
+              break;
+            }
+            case columnsByLanguage.sanction: {
+              columns.sanction = column;
+              break;
+            }
+            case columnsByLanguage.drawn: {
+              columns.drawn = column;
+
+              break;
+            }
+          }
+          column++;
+        }
+
+        return columns;
+      };
     });
   }
 
@@ -102,66 +201,9 @@ export class FrfLeague {
 
     const ignoreHidden = rows[0].checkVisibility();
 
-    const columns: ColumnsMap = {
-      position: 1,
-      shield: 2,
-    };
-
     const header = rows[0];
-    let column = 0;
 
-    for (let i = 0; i < header!.cells.length; i++) {
-      if (header!.cells[i].colSpan > 1) {
-        column += header!.cells[i].colSpan - 1;
-      }
-
-      const cellText = header!.cells[i].innerText.trim();
-
-      switch (cellText) {
-        case 'Ordenar por': {
-          columns.name = column;
-
-          break;
-        }
-        case 'Pts': {
-          columns.points = column;
-
-          break;
-        }
-        case 'J': {
-          columns.played = column;
-
-          break;
-        }
-        case 'G': {
-          columns.won = column;
-          break;
-        }
-        case 'P': {
-          columns.lost = column;
-          break;
-        }
-        case 'F': {
-          columns.gf = column;
-          break;
-        }
-        case 'C': {
-          columns.ga = column;
-          break;
-        }
-        case 'Puntos': {
-          columns.sanction = column;
-          break;
-        }
-        case 'E.':
-        case 'E': {
-          columns.drawn = column;
-
-          break;
-        }
-      }
-      column++;
-    }
+    const columns = (window as any).getColumnsMap(header);
 
     const goToDetailedView = !columns.gf || !columns.ga;
 
